@@ -1,2 +1,4 @@
-a,b,c=eval(input())
-print(type(a),type(b),type(c))
+f=lambda x=None : print('Hello'+(', '+x if x not in (None,'') else '')+'!')
+
+f()
+f('world')

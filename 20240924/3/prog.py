@@ -1,0 +1,2 @@
+a=[list(eval(input()))];t=len(a[0]);a+=[list(eval(input())) for _ in range(t-1)];b=[list(eval(input())) for _ in range(t)]
+for i in range(t): print(*[sum([a[i][k]*b[k][j] for k in range(t)])for j in range(t)],sep=',')
