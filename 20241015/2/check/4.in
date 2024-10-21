@@ -1,0 +1,8 @@
+:dist x1 y1 x2 y2 ((x1-x2)**2+(y1-y2)**2)**0.5
+dist 1 2 3 4
+:sum4 w x y z sum([w,x,y,z])
+sum4 1 2 3 4
+:prod4 w x y z prod([w,x,y,z])
+prod4 1 2 3 4
+quit "{}{}"
+

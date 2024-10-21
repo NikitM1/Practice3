@@ -1,0 +1,6 @@
+:return() 0
+return()
+:print() '1'
+print()
+quit "{}:{}"
+
