@@ -3,7 +3,7 @@ while (k:=k+1):
     s=input()
     if s[0]==':':
         s=s[1:].split();args=s[1:-1]
-        for i,t in enumerate(args): s[-1]=s[-1].replace(t,'args['+str(i)+']')
+        for t in sorted(args,key=lambda x: -len(x)): s[-1]=s[-1].replace(t,'args['+str(args.index(t))+']')
         d[s[0]]=((lambda t: lambda *args: eval(t))(s[-1]),len(args));continue
     elif s.split()[0]=='quit': print(eval(s.split('quit')[1]).format(len(d)+1,k));break
     else:
