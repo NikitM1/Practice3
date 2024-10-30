@@ -1,0 +1,1 @@
+from itertools import *;print(*sorted({t for x in product('TOR',repeat=int(input())) if (t:=''.join(x)).count('TOR')==2}),sep=', ')

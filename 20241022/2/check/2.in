@@ -1,0 +1,2 @@
+print(*list(slide(range(100), 3)))
+
