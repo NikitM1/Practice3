@@ -1,0 +1,10 @@
+x = Triangle((0, 0), (3, 0), (0, 3))
+y = Triangle((0, 0), (3, 0), (0, 3))
+z = Triangle((0, 0), (1, 0), (0, 0))
+w = Triangle((1, 1), (2, 2), (3, 3))  
+
+print(*(f"{n}({bool(x)}):{round(abs(x), 3)}" for n, x in zip("xyzw", (x, y, z, w))))
+print(f"{y < x=}, {z < x=}, {w < x=}")
+print(f"{y in x=}, {z in x=}, {x in y=}")
+print(f"{x & y=}, {y & z=}, {w & x=}, {z & w=}")
+

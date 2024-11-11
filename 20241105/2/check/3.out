@@ -1,0 +1,4 @@
+x(True):4.5 y(True):4.5 z(False):0 w(False):0
+y < x=False, z < x=True, w < x=True
+y in x=True, z in x=True, x in y=True
+x & y=True, y & z=False, w & x=False, z & w=False

@@ -1,0 +1,11 @@
+a, b, c = Omnibus(), Omnibus(), Omnibus()
+a.i, a.j, a.k, a.p = 2, 3, 7, 8
+b.i, b.j = 5, 6
+del b.i
+c.i = 18
+print(c.i, b.j, c.j, a.k)
+del a.p
+print(b.p)
+del a.i
+print(b.i)
+
