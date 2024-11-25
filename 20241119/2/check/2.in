@@ -1,0 +1,14 @@
+class CustomObject:
+    def __init__(self, real, length):
+        self.real = real
+        self._length = length
+
+    def __len__(self):
+        return self._length
+
+class C:
+  num = Num()
+c = C()
+c.num = CustomObject(10, 100)
+print(c.num)
+

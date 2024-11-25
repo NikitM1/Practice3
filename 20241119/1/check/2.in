@@ -1,0 +1,11 @@
+@objcount
+class E:
+    def __del__(self):
+        print("Deleting")
+
+e1 = E()
+e2 = E()
+print(E.counter)
+del e2
+print(E.counter)
+

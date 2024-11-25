@@ -1,0 +1,6 @@
+class C:
+  num = Num()
+c = C()
+c.num = []
+print(c.num)
+

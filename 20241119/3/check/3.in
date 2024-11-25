@@ -1,0 +1,11 @@
+wo = Vowel(a=15, e=25, y=35)
+print(wo)
+print(wo.full)
+wo.o = 50
+print(wo)
+print(wo.full)
+wo.i = 40
+wo.u = 45
+print(wo)
+print(wo.full)
+
