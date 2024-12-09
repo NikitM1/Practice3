@@ -1,0 +1,10 @@
+class D(metaclass=dump):
+    def __init__(self, val):
+        self.val = val
+
+    def get_value(self):
+        return self.val
+
+d = D(42)
+print(d.get_value())
+

@@ -1,0 +1,28 @@
+Вычисление корня числа n с заданной точностью epsilon
+
+store 225 n
+store 0.0001 epsilon
+
+store 1 x
+store -1 ch
+store 2 two
+
+loop:
+    div n x nx
+    add x nx nx
+    div nx two nx
+    sub x nx tmp 
+    ifgt zero tmp to_change
+flag:
+    iflt tmp epsilon end
+    add nx zero x
+    ifgt zero ch loop
+
+end:
+    out x
+    stop
+
+to_change: 
+mul tmp ch tmp
+ifgt zero ch flag
+

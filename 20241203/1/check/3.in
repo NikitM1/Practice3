@@ -1,0 +1,11 @@
+class E(metaclass=dump):
+    def __init__(self, text):
+        self.text = text
+
+    def concat(self, prefix: str, suffix: str = ""):
+        return f"{prefix}{self.text}{suffix}"
+
+e = E("center")
+print(e.concat("<<", ">>")) 
+print(e.concat("**"))
+

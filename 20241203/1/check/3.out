@@ -1,0 +1,5 @@
+__init__: ('center',), {}
+concat: ('<<', '>>'), {}
+<<center>>
+concat: ('**',), {}
+**center
