@@ -47,6 +47,9 @@ class MUD:
                             speech=c[4]
                             for i in range(5,len(c)): speech+=' '+c[i]
                             name=c[1]
+                            if name not in cowsay.list_cows():
+                                print('Cannot add unknown monster')
+                                continue
                             x,y=int(c[2]),int(c[3])
                             f=(x,y) in self.monsters
                             self.monsters[(x,y)]=Monster(name,x,y,speech)
@@ -54,6 +57,7 @@ class MUD:
                             if f: print('Replaced the old monster')
                         except: raise ValueError
                     case _: raise AttributeError
+            
             except ValueError: print('Invalid arguments')
             except AttributeError: print('Invalid command')
     
