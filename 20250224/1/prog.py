@@ -13,7 +13,8 @@ class Player:
         self.y=(self.y+flag)%SIZE
 
 class Monster:
-    def __init__(self,x,y,speech):
+    def __init__(self,name,x,y,speech):
+        self.name=name
         self.x=x
         self.y=y
         self.speech=speech
@@ -43,12 +44,13 @@ class MUD:
                             self.encounter(player.x,player.y)
                     case 'addmon':
                         try:
-                            speech=c[3]
-                            for i in range(4,len(c)): speech+=' '+c[i]
-                            x,y=int(c[1]),int(c[2])
+                            speech=c[4]
+                            for i in range(5,len(c)): speech+=' '+c[i]
+                            name=c[1]
+                            x,y=int(c[2]),int(c[3])
                             f=(x,y) in self.monsters
-                            self.monsters[(x,y)]=Monster(x,y,speech)
-                            print('Added monster to', (x,y), 'saying', speech)
+                            self.monsters[(x,y)]=Monster(name,x,y,speech)
+                            print('Added monster', name, 'to', (x,y), 'saying', speech)
                             if f: print('Replaced the old monster')
                         except: raise ValueError
                     case _: raise AttributeError
