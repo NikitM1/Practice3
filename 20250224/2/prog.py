@@ -20,7 +20,7 @@ class Monster:
         self.speech=speech
     
     def say(self):
-        print(cowsay.cowsay(self.speech))
+        print(cowsay.cowsay(self.speech,cow=self.name))
 
 class MUD:
     def __init__(self):
