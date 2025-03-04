@@ -1,4 +1,5 @@
 import cowsay
+import shlex
 
 SIZE=10
 JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
@@ -16,6 +17,7 @@ class Player:
 class Monster:
     def __init__(self,name,x,y,speech):
         self.name=name
+        if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
         self.x=x
         self.y=y
         self.speech=speech
@@ -38,8 +40,8 @@ class MUD:
     def play(self):
         player=Player()
         self.printGreeting()
-        while s:=input().strip():
-            c=s.split()
+        while s:=input():
+            c=shlex.split(s)
             try:
                 match t:=(c[0].lower()):
                     case 'up'|'down'|'left'|'right':
@@ -52,7 +54,6 @@ class MUD:
                     case 'addmon':
                         try:
                             speech=c[4]
-                            for i in range(5,len(c)): speech+=' '+c[i]
                             name=c[1]
                             if name not in cowsay.list_cows()+['jgsbat']:
                                 print('Cannot add unknown monster')
