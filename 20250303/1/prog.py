@@ -15,8 +15,10 @@ class Player:
         self.y=(self.y+flag)%SIZE
 
 class Monster:
-    def __init__(self,name,x,y,speech):
+    def __init__(self,name,hitpoints,x,y,speech):
         self.name=name
+        if hitpoints<=0: raise ValueError
+        self.hitpoints=hitpoints
         if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
         self.x=x
         self.y=y
@@ -52,18 +54,19 @@ class MUD:
                         if (player.x, player.y) in self.monsters:
                             self.encounter(player.x,player.y)
                     case 'addmon':
-                        try:
-                            speech=c[4]
-                            name=c[1]
-                            if name not in cowsay.list_cows()+['jgsbat']:
-                                print('Cannot add unknown monster')
-                                continue
-                            x,y=int(c[2]),int(c[3])
-                            f=(x,y) in self.monsters
-                            self.monsters[(x,y)]=Monster(name,x,y,speech)
-                            print('Added monster', name, 'to', (x,y), 'saying', speech)
-                            if f: print('Replaced the old monster')
-                        except: raise ValueError
+                        if len(c)!=9 or any(p not in c for p in ('hello','hp','coords')): raise ValueError
+                        name=c[1]
+                        if name not in cowsay.list_cows()+['jgsbat']:
+                            print('Cannot add unknown monster')
+                            continue
+                        speech=c[c.index('hello')+1]
+                        hitpoints=int(c[c.index('hp')+1])
+                        coords=c.index('coords')
+                        x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
+                        f=(x,y) in self.monsters
+                        self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
+                        print('Added monster', name, 'to', (x,y), 'saying', speech)
+                        if f: print('Replaced the old monster')
                     case _: raise AttributeError
             except ValueError: print('Invalid arguments')
             except AttributeError: print('Invalid command')
