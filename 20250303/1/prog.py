@@ -1,6 +1,7 @@
 import cowsay
 
 SIZE=10
+JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
 
 class Player:
     def __init__(self):
@@ -20,7 +21,9 @@ class Monster:
         self.speech=speech
     
     def say(self):
-        print(cowsay.cowsay(self.speech,cow=self.name))
+        if self.name!='jgsbat':
+            print(cowsay.cowsay(self.speech,cow=self.name))
+        else: print(cowsay.cowsay(self.speech,cowfile=JGSBAT))
 
 class MUD:
     def __init__(self):
@@ -47,7 +50,7 @@ class MUD:
                             speech=c[4]
                             for i in range(5,len(c)): speech+=' '+c[i]
                             name=c[1]
-                            if name not in cowsay.list_cows():
+                            if name not in cowsay.list_cows()+['jgsbat']:
                                 print('Cannot add unknown monster')
                                 continue
                             x,y=int(c[2]),int(c[3])
