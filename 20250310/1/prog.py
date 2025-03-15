@@ -11,15 +11,16 @@ class Player:
     
     def moveHorizontally(self,flag):
         self.x=(self.x+flag)%SIZE
-        print('Moved to', (self.x, self.y))
-        if (self.x, self.y) in game.monsters:
-            game.encounter(self.x,self.y)        
+        self.printPosition()
     
     def moveVertically(self,flag):
         self.y=(self.y+flag)%SIZE
+        self.printPosition()
+    
+    def printPosition(self):
         print('Moved to', (self.x, self.y))
         if (self.x, self.y) in game.monsters:
-            game.encounter(self.x,self.y)          
+            game.encounter(self.x,self.y)        
 
 class Monster:
     def __init__(self,name,hitpoints,x,y,speech):
@@ -35,6 +36,13 @@ class Monster:
         if self.name!='jgsbat':
             print(cowsay.cowsay(self.speech,cow=self.name))
         else: print(cowsay.cowsay(self.speech,cowfile=JGSBAT))
+    
+    def attacked(self,damage):
+        damage=min(damage,self.hitpoints)
+        self.hitpoints-=damage
+        print('Attacked '+self.name+', damage',damage,'hp')
+        print(self.name+(' now has '+str(self.hitpoints) if self.hitpoints else ' died'))
+        return self.hitpoints
 
 class MUD(cmd.Cmd):
     intro='<<< Welcome to Python-MUD 0.1 >>>'
@@ -83,12 +91,22 @@ class MUD(cmd.Cmd):
             if f: print('Replaced the old monster')
         except ValueError: print('Invalid arguments')
     
+    def do_attack(self,args):
+        if args:
+            print('Invalid arguments')
+            return
+        if (player.x,player.y) not in self.monsters:
+            print('No monster here')
+            return
+        if self.monsters[(player.x,player.y)].attacked(10)==0:
+            del self.monsters[(player.x,player.y)]
+    
     def do_EOF(self,args):
         return 1
     
     def do_default(self):
         print('Invalid command')
-    
+
 if __name__=='__main__':
     player=Player()
     game=MUD()
