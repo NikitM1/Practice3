@@ -1,9 +1,11 @@
 import cmd
 import cowsay
+import readline
 import shlex
 
-SIZE=10
 JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
+NAMES_LIST=cowsay.list_cows()+['jgsbat']
+SIZE=10
 
 class Player:
     def __init__(self):
@@ -48,11 +50,6 @@ class MUD(cmd.Cmd):
     intro='<<< Welcome to Python-MUD 0.1 >>>'
     prompt='>>>'
     
-    def __init__(self):
-        super().__init__()
-        self.completekey='tab'
-        self.monsters={}
-    
     def encounter(self,x,y):
         self.monsters[(x,y)].say()
     
@@ -78,7 +75,7 @@ class MUD(cmd.Cmd):
             if len(c)!=8 or any(p not in c for p in ('hello','hp','coords')):
                 raise ValueError
             name=c[0]
-            if name not in cowsay.list_cows()+['jgsbat']:
+            if name not in NAMES_LIST:
                 print('Cannot add unknown monster')
                 return
             speech=c[c.index('hello')+1]
@@ -92,14 +89,20 @@ class MUD(cmd.Cmd):
         except ValueError: print('Invalid arguments')
     
     def do_attack(self,args):
-        if args:
+        args=shlex.split(args)
+        if len(args)!=1:
             print('Invalid arguments')
             return
-        if (player.x,player.y) not in self.monsters:
-            print('No monster here')
+        if (player.x,player.y) not in self.monsters or self.monsters[(player.x,player.y)].name!=args[0]:
+            print('No',args[0],'here')
             return
         if self.monsters[(player.x,player.y)].attacked(10)==0:
             del self.monsters[(player.x,player.y)]
+    
+    def complete_attack(self, text, line, begidx, endidx):
+        args = shlex.split(line[:begidx], False, False)
+        if args[-1] == 'attack':
+            return [c for c in NAMES_LIST if c.startswith(text)]    
     
     def do_EOF(self,args):
         return 1
@@ -110,4 +113,9 @@ class MUD(cmd.Cmd):
 if __name__=='__main__':
     player=Player()
     game=MUD()
+    game.monsters={}
+    if 'libedit' in readline.__doc__:
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete") 
     game.cmdloop()
