@@ -86,7 +86,7 @@ class MUD(cmd.Cmd):
             self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
             print('Added monster', name, 'to', (x,y), 'saying', speech)
             if f: print('Replaced the old monster')
-        except ValueError: print('Invalid arguments')  
+        except ValueError: print('Invalid arguments')
     
     def do_attack(self,args):
         args=shlex.split(args)
