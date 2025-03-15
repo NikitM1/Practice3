@@ -1,3 +1,4 @@
+import cmd
 import cowsay
 import shlex
 
@@ -10,9 +11,15 @@ class Player:
     
     def moveHorizontally(self,flag):
         self.x=(self.x+flag)%SIZE
+        print('Moved to', (self.x, self.y))
+        if (self.x, self.y) in game.monsters:
+            game.encounter(self.x,self.y)        
     
     def moveVertically(self,flag):
         self.y=(self.y+flag)%SIZE
+        print('Moved to', (self.x, self.y))
+        if (self.x, self.y) in game.monsters:
+            game.encounter(self.x,self.y)          
 
 class Monster:
     def __init__(self,name,hitpoints,x,y,speech):
@@ -29,46 +36,60 @@ class Monster:
             print(cowsay.cowsay(self.speech,cow=self.name))
         else: print(cowsay.cowsay(self.speech,cowfile=JGSBAT))
 
-class MUD:
+class MUD(cmd.Cmd):
+    intro='<<< Welcome to Python-MUD 0.1 >>>'
+    prompt='>>>'
+    
     def __init__(self):
+        super().__init__()
+        self.completekey='tab'
         self.monsters={}
     
     def encounter(self,x,y):
         self.monsters[(x,y)].say()
     
-    def printGreeting(self):
-        print('<<< Welcome to Python-MUD 0.1 >>>')
+    def do_up(self,args):
+        if args: print('Invalid arguments')
+        else: player.moveVertically(-1)
     
-    def play(self):
-        player=Player()
-        self.printGreeting()
-        while s:=input():
-            c=shlex.split(s)
-            try:
-                match t:=(c[0].lower()):
-                    case 'up'|'down'|'left'|'right':
-                        if len(c)>1: raise ValueError
-                        player.moveHorizontally((t=='right')-(t=='left'))
-                        player.moveVertically((t=='down')-(t=='up'))
-                        print('Moved to', (player.x, player.y))
-                        if (player.x, player.y) in self.monsters:
-                            self.encounter(player.x,player.y)
-                    case 'addmon':
-                        if len(c)!=9 or any(p not in c for p in ('hello','hp','coords')): raise ValueError
-                        name=c[1]
-                        if name not in cowsay.list_cows()+['jgsbat']:
-                            print('Cannot add unknown monster')
-                            continue
-                        speech=c[c.index('hello')+1]
-                        hitpoints=int(c[c.index('hp')+1])
-                        coords=c.index('coords')
-                        x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
-                        f=(x,y) in self.monsters
-                        self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
-                        print('Added monster', name, 'to', (x,y), 'saying', speech)
-                        if f: print('Replaced the old monster')
-                    case _: raise AttributeError
-            except ValueError: print('Invalid arguments')
-            except AttributeError: print('Invalid command')
+    def do_down(self,args):
+        if args: print('Invalid arguments')
+        else: player.moveVertically(1)
     
-MUD().play()
+    def do_left(self,args):
+        if args: print('Invalid arguments')
+        else: player.moveHorizontally(-1)
+    
+    def do_right(self,args):
+        if args: print('Invalid arguments')
+        else: player.moveHorizontally(1)
+    
+    def do_addmon(self,args):
+        c=shlex.split(args)
+        try:
+            if len(c)!=8 or any(p not in c for p in ('hello','hp','coords')):
+                raise ValueError
+            name=c[0]
+            if name not in cowsay.list_cows()+['jgsbat']:
+                print('Cannot add unknown monster')
+                return
+            speech=c[c.index('hello')+1]
+            hitpoints=int(c[c.index('hp')+1])
+            coords=c.index('coords')
+            x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
+            f=(x,y) in self.monsters
+            self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
+            print('Added monster', name, 'to', (x,y), 'saying', speech)
+            if f: print('Replaced the old monster')
+        except ValueError: print('Invalid arguments')
+    
+    def do_EOF(self,args):
+        return 1
+    
+    def do_default(self):
+        print('Invalid command')
+    
+if __name__=='__main__':
+    player=Player()
+    game=MUD()
+    game.cmdloop()
