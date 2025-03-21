@@ -21,9 +21,12 @@ def addmon(name,x,y,speech,f):
     print('Added monster', name, 'to', (x,y), 'saying', speech)
     if f: print('Replaced the old monster')
 
-def attack():
-    print()
-    pass
+def attack(name,hitpoints,damage):
+    if damage=='-1':
+        print('No',name,'here')
+        return
+    print('Attacked '+name+', damage',damage,'hp')
+    print(name+(' now has '+str(hitpoints) if int(hitpoints) else ' died'))    
 
 class MUD(cmd.Cmd):
     intro='<<< Welcome to Python-MUD 0.1 >>>'
@@ -86,11 +89,8 @@ class MUD(cmd.Cmd):
                 print('Unknown weapon')
                 return
         else: weapon='sword'
-        if (player.x,player.y) not in self.monsters or self.monsters[(player.x,player.y)].name!=args[0]:
-            print('No',args[0],'here')
-            return
-        if self.monsters[(player.x,player.y)].attacked(10+WEAPON.index(weapon)*5)==0:
-            del self.monsters[(player.x,player.y)]
+        self.socket.sendall(shlex.join(['attack',args[0],str(10+WEAPON.index(weapon)*5)]).encode())
+        attack(args[0],*shlex.split(self.socket.recv(1024).decode()))
     
     def complete_attack(self, text, line, begidx, endidx):
         args = shlex.split(line[:begidx], False, False)

@@ -54,7 +54,7 @@ class MUD:
     
     def attack(self,name,damage):
         if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
-            return '-1 -1'       
+            return '-1','-1'       
         hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(damage)
         if hitpoints==0:
             del self.monsters[(self.player.x,self.player.y)]
