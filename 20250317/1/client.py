@@ -10,12 +10,16 @@ NAMES_LIST=cowsay.list_cows()+['jgsbat']
 SIZE=10
 WEAPON=['sword','spear','axe']
 
-def move(x,y):
+def move(x,y,name='',speech=''):
     print('Moved to ('+x+', '+y+')')
+    if name=='jgsbat':
+        print(cowsay.cowsay(speech,cowfile=JGSBAT))
+    elif name:
+        print(cowsay.cowsay(speech,cow=name))
 
-def addmon():
-    print()
-    pass
+def addmon(name,x,y,speech,f):
+    print('Added monster', name, 'to', (x,y), 'saying', speech)
+    if f: print('Replaced the old monster')
 
 def attack():
     print()
@@ -32,25 +36,25 @@ class MUD(cmd.Cmd):
     def do_up(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b"move 0 1")
+            self.socket.sendall(b'move 0 1')
             move(*shlex.split(self.socket.recv(1024).decode()))
     
     def do_down(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b"move 0 -1")
+            self.socket.sendall(b'move 0 -1')
             move(*shlex.split(self.socket.recv(1024).decode()))            
     
     def do_left(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b"move -1 0")
+            self.socket.sendall(b'move -1 0')
             move(*shlex.split(self.socket.recv(1024).decode()))            
     
     def do_right(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b"move 1 0")
+            self.socket.sendall(b'move 1 0')
             move(*shlex.split(self.socket.recv(1024).decode()))            
     
     def do_addmon(self,args):
@@ -64,14 +68,12 @@ class MUD(cmd.Cmd):
                 return
             speech=c[c.index('hello')+1]
             hitpoints=int(c[c.index('hp')+1])
+            if hitpoints<=0: raise ValueError
             coords=c.index('coords')
             x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
-            f=(x,y) in self.monsters
-            self.socket.sendall(b"move 1 0")
-            move(*shlex.split(self.socket.recv(1024).decode()))              
-            self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
-            print('Added monster', name, 'to', (x,y), 'saying', speech)
-            if f: print('Replaced the old monster')
+            if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
+            self.socket.sendall(shlex.join(['addmon',name,str(hitpoints),str(x),str(y),speech]).encode())
+            addmon(name,x,y,speech,bool(int(self.socket.recv(1024).decode())))
         except ValueError: print('Invalid arguments')
     
     def do_attack(self,args):

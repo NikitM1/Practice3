@@ -1,11 +1,8 @@
-import cmd
-import readline
 import shlex
 import socket
 import sys
 
 SIZE=10
-WEAPON=['sword','spear','axe']
 
 class Player:
     def __init__(self):
@@ -21,15 +18,11 @@ class Player:
         if (self.x, self.y) in game.monsters:
             return str(self.x),str(self.y),*game.encounter(self.x,self.y)
         return str(self.x),str(self.y)
-        
-                    
 
 class Monster:
     def __init__(self,name,hitpoints,x,y,speech):
         self.name=name
-        if hitpoints<=0: raise ValueError
         self.hitpoints=hitpoints
-        if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
         self.x=x
         self.y=y
         self.speech=speech
@@ -55,14 +48,14 @@ class MUD:
         return self.monsters[(x,y)].name,self.monsters[(x,y)].speech
     
     def addmon(self,name,hitpoints,x,y,speech):
-        f=(x,y) in self.monsters
+        f=int((x,y) in self.monsters)
         self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
         return str(f)
     
     def attack(self,name,damage):
         if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
             return '-1 -1'       
-        hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(10+WEAPON.index(weapon)*5)
+        hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(damage)
         if hitpoints==0:
             del self.monsters[(self.player.x,self.player.y)]
         return map(str,[hitpoints,damage])
