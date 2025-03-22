@@ -68,6 +68,8 @@ def serve(conn,addr):
         while data:=conn.recv(1024).decode():
             cmd, *args=shlex.split(data)
             match cmd:
+                case 'size':
+                    conn.sendall(str(SIZE).encode())
                 case 'move':
                     response=game.move(*list(map(int,args)))
                     conn.sendall(shlex.join(response).encode())

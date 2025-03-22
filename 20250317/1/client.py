@@ -7,7 +7,6 @@ import sys
 
 JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
 NAMES_LIST=cowsay.list_cows()+['jgsbat']
-SIZE=10
 WEAPON=['sword','spear','axe']
 
 def move(x,y,name='',speech=''):
@@ -35,6 +34,8 @@ class MUD(cmd.Cmd):
     def __init__(self,socket):
         super().__init__()
         self.socket=socket
+        self.socket.sendall(b'size')
+        self.SIZE=int(self.socket.recv(1024).decode())
     
     def do_up(self,args):
         if args: print('Invalid arguments')
@@ -74,7 +75,7 @@ class MUD(cmd.Cmd):
             if hitpoints<=0: raise ValueError
             coords=c.index('coords')
             x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
-            if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
+            if not (0<=x<self.SIZE and 0<=y<self.SIZE): raise ValueError
             self.socket.sendall(shlex.join(['addmon',name,str(hitpoints),str(x),str(y),speech]).encode())
             addmon(name,x,y,speech,bool(int(self.socket.recv(1024).decode())))
         except ValueError: print('Invalid arguments')
