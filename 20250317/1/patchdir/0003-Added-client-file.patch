@@ -1,0 +1,265 @@
+From 78284e26153b87b269fdcc7f7ba43360d647df19 Mon Sep 17 00:00:00 2001
+From: Mikhail Nikitin <s02220189@gse.cs.msu.ru>
+Date: Fri, 21 Mar 2025 22:13:36 +0300
+Subject: [PATCH 3/6] Added client file Edited server file so that it can
+ handle requests correctly Now server can handle all player's movements
+ requests
+
+---
+ 20250317/1/client.py  | 116 ++++++++++++++++++++++++++++++++++++++++++
+ 20250317/1/jgsbat.cow |  13 +++++
+ 20250317/1/server.py  |  55 +++++++-------------
+ 3 files changed, 147 insertions(+), 37 deletions(-)
+ create mode 100644 20250317/1/client.py
+ create mode 100644 20250317/1/jgsbat.cow
+
+diff --git a/20250317/1/client.py b/20250317/1/client.py
+new file mode 100644
+index 0000000..a3adf47
+--- /dev/null
++++ b/20250317/1/client.py
+@@ -0,0 +1,116 @@
++import cmd
++import cowsay
++import readline
++import shlex
++import socket
++import sys
++
++JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
++NAMES_LIST=cowsay.list_cows()+['jgsbat']
++SIZE=10
++WEAPON=['sword','spear','axe']
++
++def move(x,y):
++    print('Moved to ('+x+', '+y+')')
++
++def addmon():
++    print()
++    pass
++
++def attack():
++    print()
++    pass
++
++class MUD(cmd.Cmd):
++    intro='<<< Welcome to Python-MUD 0.1 >>>'
++    prompt='>>>'
++    
++    def __init__(self,socket):
++        super().__init__()
++        self.socket=socket
++    
++    def do_up(self,args):
++        if args: print('Invalid arguments')
++        else: 
++            self.socket.sendall(b"move 0 1")
++            move(*shlex.split(self.socket.recv(1024).decode()))
++    
++    def do_down(self,args):
++        if args: print('Invalid arguments')
++        else: 
++            self.socket.sendall(b"move 0 -1")
++            move(*shlex.split(self.socket.recv(1024).decode()))            
++    
++    def do_left(self,args):
++        if args: print('Invalid arguments')
++        else: 
++            self.socket.sendall(b"move -1 0")
++            move(*shlex.split(self.socket.recv(1024).decode()))            
++    
++    def do_right(self,args):
++        if args: print('Invalid arguments')
++        else: 
++            self.socket.sendall(b"move 1 0")
++            move(*shlex.split(self.socket.recv(1024).decode()))            
++    
++    def do_addmon(self,args):
++        c=shlex.split(args)
++        try:
++            if len(c)!=8 or any(p not in c for p in ('hello','hp','coords')):
++                raise ValueError
++            name=c[0]
++            if name not in NAMES_LIST:
++                print('Cannot add unknown monster')
++                return
++            speech=c[c.index('hello')+1]
++            hitpoints=int(c[c.index('hp')+1])
++            coords=c.index('coords')
++            x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
++            f=(x,y) in self.monsters
++            self.socket.sendall(b"move 1 0")
++            move(*shlex.split(self.socket.recv(1024).decode()))              
++            self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
++            print('Added monster', name, 'to', (x,y), 'saying', speech)
++            if f: print('Replaced the old monster')
++        except ValueError: print('Invalid arguments')
++    
++    def do_attack(self,args):
++        args=shlex.split(args)
++        if len(args) not in (1,3) or 'with' in args and args.index('with')!=1:
++            print('Invalid arguments')
++            return
++        if len(args)==3:
++            if (weapon:=args[2]) not in WEAPON:
++                print('Unknown weapon')
++                return
++        else: weapon='sword'
++        if (player.x,player.y) not in self.monsters or self.monsters[(player.x,player.y)].name!=args[0]:
++            print('No',args[0],'here')
++            return
++        if self.monsters[(player.x,player.y)].attacked(10+WEAPON.index(weapon)*5)==0:
++            del self.monsters[(player.x,player.y)]
++    
++    def complete_attack(self, text, line, begidx, endidx):
++        args = shlex.split(line[:begidx], False, False)
++        if args[-1] == 'attack':
++            return [c for c in NAMES_LIST if c.startswith(text)]
++        elif args[-1]=='with':
++            return [c for c in WEAPON if c.startswith(text)]
++    
++    def do_EOF(self,args):
++        return 1
++    
++    def do_default(self):
++        print('Invalid command')
++
++host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
++port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
++
++if __name__=='__main__':
++    if 'libedit' in readline.__doc__:
++        readline.parse_and_bind("bind ^I rl_complete")
++    else:
++        readline.parse_and_bind("tab: complete")
++    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sockfd:
++        sockfd.connect((host, port))
++        MUD(sockfd).cmdloop()
+diff --git a/20250317/1/jgsbat.cow b/20250317/1/jgsbat.cow
+new file mode 100644
+index 0000000..f3e6e8c
+--- /dev/null
++++ b/20250317/1/jgsbat.cow
+@@ -0,0 +1,13 @@
++$the_cow = <<EOC;
++$thoughts
++ $thoughts
++    ,_                    _,
++    ) '-._  ,_    _,  _.-' (
++    )  _.-'.|\\--//|.'-._  (
++     )'   .'\/o\/o\/'.   `(
++      ) .' . \====/ . '. (
++       )  / <<    >> \  (
++        '-._/``  ``\_.-'
++  jgs     __\\'--'//__
++         (((""`  `"")))
++EOC
+diff --git a/20250317/1/server.py b/20250317/1/server.py
+index 0f10e3a..2d17952 100644
+--- a/20250317/1/server.py
++++ b/20250317/1/server.py
+@@ -1,11 +1,9 @@
+ import cmd
+-import cowsay
+ import readline
+ import shlex
+ import socket
++import sys
+ 
+-JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
+-NAMES_LIST=cowsay.list_cows()+['jgsbat']
+ SIZE=10
+ WEAPON=['sword','spear','axe']
+ 
+@@ -21,8 +19,8 @@ class Player:
+     
+     def printPosition(self):
+         if (self.x, self.y) in game.monsters:
+-            return 'Moved to '+str((self.x, self.y)),*game.encounter(self.x,self.y)
+-        return 'Moved to '+str((self.x, self.y))
++            return str(self.x),str(self.y),*game.encounter(self.x,self.y)
++        return str(self.x),str(self.y)
+         
+                     
+ 
+@@ -39,7 +37,7 @@ class Monster:
+     def attacked(self,damage):
+         damage=min(damage,self.hitpoints)
+         self.hitpoints-=damage
+-        return self.name,self.hitpoints,damage
++        return self.hitpoints,damage
+ 
+ class MUD:
+     def __init__(self):
+@@ -56,54 +54,37 @@ class MUD:
+     def encounter(self,x,y):
+         return self.monsters[(x,y)].name,self.monsters[(x,y)].speech
+     
+-    def addmon(self,args):
+-        try:
+-            if len(args)!=8 or any(p not in args for p in ('hello','hp','coords')):
+-                raise ValueError
+-            name=args[0]
+-            if name not in NAMES_LIST:
+-                return 'Cannot add unknown monster'
+-            speech=args[args.index('hello')+1]
+-            hitpoints=int(args[args.index('hp')+1])
+-            coords=args.index('coords')
+-            x,y=int(args[coords+1]),int(args[coords+2]) #if not int then raise ValueError
+-            f=(x,y) in self.monsters
+-            self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
+-            return 'Added monster '+name+' to '+str((x,y))+' saying '+speech+(f*'\nReplaced the old monster')
+-        except ValueError: return 'Invalid arguments'
++    def addmon(self,name,hitpoints,x,y,speech):
++        f=(x,y) in self.monsters
++        self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
++        return str(f)
+     
+-    def attack(self,args):
+-        args=shlex.split(args)
+-        if len(args) not in (1,3) or 'with' in args and args.index('with')!=1:
+-            return 'Invalid arguments'
+-        if len(args)==3:
+-            if (weapon:=args[2]) not in WEAPON:
+-                return'Unknown weapon'
+-        else: weapon='sword'
+-        if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=args[0]:
+-            return 'No '+args[0]+' here'        
+-        name,hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(10+WEAPON.index(weapon)*5)
++    def attack(self,name,damage):
++        if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
++            return '-1 -1'       
++        hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(10+WEAPON.index(weapon)*5)
+         if hitpoints==0:
+             del self.monsters[(self.player.x,self.player.y)]
+-        return 'Attacked '+name+', damage '+str(damage)+' hp\n'+self.name+(' now has '+str(self.hitpoints) if self.hitpoints else ' died')
++        return map(str,[hitpoints,damage])
+ 
+ def serve(conn,addr):
+     print(f'Connected via {addr[0]}:{addr[1]}')
+     with conn:
++        global game
+         game=MUD()
+         while data:=conn.recv(1024).decode():
+             cmd, *args=shlex.split(data)
+             match cmd:
+                 case 'move':
+-                    response=game.move(args)
++                    response=game.move(*list(map(int,args)))
+                     conn.sendall(shlex.join(response).encode())
+                 case 'addmon':
+-                    response=game.addmon(args)
++                    response=game.addmon(args[0],int(args[1]),int(args[2]),int(args[3]),args[4])
+                     conn.sendall(shlex.join(response).encode())
+                 case 'attack':
+-                    response=game.attack(args)
++                    response=game.attack(args[0],int(args[1]))
+                     conn.sendall(shlex.join(response).encode())
+-    print(f"Disconnected from {addr[0]}:{addr[1]}")
++    print(f'Disconnected from {addr[0]}:{addr[1]}')
+ 
+ host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
+ port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
+-- 
+2.24.3 (Apple Git-128)
+

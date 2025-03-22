@@ -1,0 +1,137 @@
+From 060125c42fda5d7604052f2b305c51091dcb8257 Mon Sep 17 00:00:00 2001
+From: Mikhail Nikitin <s02220189@gse.cs.msu.ru>
+Date: Fri, 21 Mar 2025 22:50:04 +0300
+Subject: [PATCH 4/6] Edited files to handle addmon requests Added function
+ addmon to client file
+
+---
+ 20250317/1/client.py | 30 ++++++++++++++++--------------
+ 20250317/1/server.py | 11 ++---------
+ 2 files changed, 18 insertions(+), 23 deletions(-)
+
+diff --git a/20250317/1/client.py b/20250317/1/client.py
+index a3adf47..ad2208c 100644
+--- a/20250317/1/client.py
++++ b/20250317/1/client.py
+@@ -10,12 +10,16 @@ NAMES_LIST=cowsay.list_cows()+['jgsbat']
+ SIZE=10
+ WEAPON=['sword','spear','axe']
+ 
+-def move(x,y):
++def move(x,y,name='',speech=''):
+     print('Moved to ('+x+', '+y+')')
++    if name=='jgsbat':
++        print(cowsay.cowsay(speech,cowfile=JGSBAT))
++    elif name:
++        print(cowsay.cowsay(speech,cow=name))
+ 
+-def addmon():
+-    print()
+-    pass
++def addmon(name,x,y,speech,f):
++    print('Added monster', name, 'to', (x,y), 'saying', speech)
++    if f: print('Replaced the old monster')
+ 
+ def attack():
+     print()
+@@ -32,25 +36,25 @@ class MUD(cmd.Cmd):
+     def do_up(self,args):
+         if args: print('Invalid arguments')
+         else: 
+-            self.socket.sendall(b"move 0 1")
++            self.socket.sendall(b'move 0 1')
+             move(*shlex.split(self.socket.recv(1024).decode()))
+     
+     def do_down(self,args):
+         if args: print('Invalid arguments')
+         else: 
+-            self.socket.sendall(b"move 0 -1")
++            self.socket.sendall(b'move 0 -1')
+             move(*shlex.split(self.socket.recv(1024).decode()))            
+     
+     def do_left(self,args):
+         if args: print('Invalid arguments')
+         else: 
+-            self.socket.sendall(b"move -1 0")
++            self.socket.sendall(b'move -1 0')
+             move(*shlex.split(self.socket.recv(1024).decode()))            
+     
+     def do_right(self,args):
+         if args: print('Invalid arguments')
+         else: 
+-            self.socket.sendall(b"move 1 0")
++            self.socket.sendall(b'move 1 0')
+             move(*shlex.split(self.socket.recv(1024).decode()))            
+     
+     def do_addmon(self,args):
+@@ -64,14 +68,12 @@ class MUD(cmd.Cmd):
+                 return
+             speech=c[c.index('hello')+1]
+             hitpoints=int(c[c.index('hp')+1])
++            if hitpoints<=0: raise ValueError
+             coords=c.index('coords')
+             x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
+-            f=(x,y) in self.monsters
+-            self.socket.sendall(b"move 1 0")
+-            move(*shlex.split(self.socket.recv(1024).decode()))              
+-            self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
+-            print('Added monster', name, 'to', (x,y), 'saying', speech)
+-            if f: print('Replaced the old monster')
++            if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
++            self.socket.sendall(shlex.join(['addmon',name,str(hitpoints),str(x),str(y),speech]).encode())
++            addmon(name,x,y,speech,bool(int(self.socket.recv(1024).decode())))
+         except ValueError: print('Invalid arguments')
+     
+     def do_attack(self,args):
+diff --git a/20250317/1/server.py b/20250317/1/server.py
+index 2d17952..8ee6021 100644
+--- a/20250317/1/server.py
++++ b/20250317/1/server.py
+@@ -1,11 +1,8 @@
+-import cmd
+-import readline
+ import shlex
+ import socket
+ import sys
+ 
+ SIZE=10
+-WEAPON=['sword','spear','axe']
+ 
+ class Player:
+     def __init__(self):
+@@ -21,15 +18,11 @@ class Player:
+         if (self.x, self.y) in game.monsters:
+             return str(self.x),str(self.y),*game.encounter(self.x,self.y)
+         return str(self.x),str(self.y)
+-        
+-                    
+ 
+ class Monster:
+     def __init__(self,name,hitpoints,x,y,speech):
+         self.name=name
+-        if hitpoints<=0: raise ValueError
+         self.hitpoints=hitpoints
+-        if not (0<=x<SIZE and 0<=y<SIZE): raise ValueError
+         self.x=x
+         self.y=y
+         self.speech=speech
+@@ -55,14 +48,14 @@ class MUD:
+         return self.monsters[(x,y)].name,self.monsters[(x,y)].speech
+     
+     def addmon(self,name,hitpoints,x,y,speech):
+-        f=(x,y) in self.monsters
++        f=int((x,y) in self.monsters)
+         self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
+         return str(f)
+     
+     def attack(self,name,damage):
+         if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
+             return '-1 -1'       
+-        hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(10+WEAPON.index(weapon)*5)
++        hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(damage)
+         if hitpoints==0:
+             del self.monsters[(self.player.x,self.player.y)]
+         return map(str,[hitpoints,damage])
+-- 
+2.24.3 (Apple Git-128)
+

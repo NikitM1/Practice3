@@ -1,0 +1,61 @@
+From 50755a35959d3744e76058a1e0dd0ccfd80bcd2c Mon Sep 17 00:00:00 2001
+From: Mikhail Nikitin <s02220189@gse.cs.msu.ru>
+Date: Fri, 21 Mar 2025 23:22:33 +0300
+Subject: [PATCH 5/6] Final solution completed Edited files to provide attack
+ response. Added attack function in client file
+
+---
+ 20250317/1/client.py | 16 ++++++++--------
+ 20250317/1/server.py |  2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/20250317/1/client.py b/20250317/1/client.py
+index ad2208c..997a983 100644
+--- a/20250317/1/client.py
++++ b/20250317/1/client.py
+@@ -21,9 +21,12 @@ def addmon(name,x,y,speech,f):
+     print('Added monster', name, 'to', (x,y), 'saying', speech)
+     if f: print('Replaced the old monster')
+ 
+-def attack():
+-    print()
+-    pass
++def attack(name,hitpoints,damage):
++    if damage=='-1':
++        print('No',name,'here')
++        return
++    print('Attacked '+name+', damage',damage,'hp')
++    print(name+(' now has '+str(hitpoints) if int(hitpoints) else ' died'))    
+ 
+ class MUD(cmd.Cmd):
+     intro='<<< Welcome to Python-MUD 0.1 >>>'
+@@ -86,11 +89,8 @@ class MUD(cmd.Cmd):
+                 print('Unknown weapon')
+                 return
+         else: weapon='sword'
+-        if (player.x,player.y) not in self.monsters or self.monsters[(player.x,player.y)].name!=args[0]:
+-            print('No',args[0],'here')
+-            return
+-        if self.monsters[(player.x,player.y)].attacked(10+WEAPON.index(weapon)*5)==0:
+-            del self.monsters[(player.x,player.y)]
++        self.socket.sendall(shlex.join(['attack',args[0],str(10+WEAPON.index(weapon)*5)]).encode())
++        attack(args[0],*shlex.split(self.socket.recv(1024).decode()))
+     
+     def complete_attack(self, text, line, begidx, endidx):
+         args = shlex.split(line[:begidx], False, False)
+diff --git a/20250317/1/server.py b/20250317/1/server.py
+index 8ee6021..7bee046 100644
+--- a/20250317/1/server.py
++++ b/20250317/1/server.py
+@@ -54,7 +54,7 @@ class MUD:
+     
+     def attack(self,name,damage):
+         if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
+-            return '-1 -1'       
++            return '-1','-1'       
+         hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(damage)
+         if hitpoints==0:
+             del self.monsters[(self.player.x,self.player.y)]
+-- 
+2.24.3 (Apple Git-128)
+
