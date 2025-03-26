@@ -4,17 +4,11 @@ import readline
 import shlex
 import socket
 import sys
+import threading
 
 JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
 NAMES_LIST=cowsay.list_cows()+['jgsbat']
 WEAPON=['sword','spear','axe']
-
-def move(x,y,name='',speech=''):
-    print('Moved to ('+x+', '+y+')')
-    if name=='jgsbat':
-        print(cowsay.cowsay(speech,cowfile=JGSBAT))
-    elif name:
-        print(cowsay.cowsay(speech,cow=name))
 
 def addmon(name,x,y,speech,f):
     print('Added monster', name, 'to', (x,y), 'saying', speech)
@@ -34,32 +28,28 @@ class MUD(cmd.Cmd):
     def __init__(self,socket):
         super().__init__()
         self.socket=socket
-        self.socket.sendall(b'size')
-        self.SIZE=int(self.socket.recv(1024).decode())
+        #self.socket.sendall(b'size\n')
+        self.SIZE=10  #int(self.socket.recv(1024).decode())
     
     def do_up(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b'move 0 1')
-            move(*shlex.split(self.socket.recv(1024).decode()))
+            self.socket.sendall(b'move 0 1\n')
     
     def do_down(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b'move 0 -1')
-            move(*shlex.split(self.socket.recv(1024).decode()))            
+            self.socket.sendall(b'move 0 -1\n')
     
     def do_left(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b'move -1 0')
-            move(*shlex.split(self.socket.recv(1024).decode()))            
+            self.socket.sendall(b'move -1 0\n')
     
     def do_right(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b'move 1 0')
-            move(*shlex.split(self.socket.recv(1024).decode()))            
+            self.socket.sendall(b'move 1 0\n')
     
     def do_addmon(self,args):
         c=shlex.split(args)
@@ -76,8 +66,7 @@ class MUD(cmd.Cmd):
             coords=c.index('coords')
             x,y=int(c[coords+1]),int(c[coords+2]) #if not int then raise ValueError
             if not (0<=x<self.SIZE and 0<=y<self.SIZE): raise ValueError
-            self.socket.sendall(shlex.join(['addmon',name,str(hitpoints),str(x),str(y),speech]).encode())
-            addmon(name,x,y,speech,bool(int(self.socket.recv(1024).decode())))
+            self.socket.sendall((shlex.join(['addmon',name,str(hitpoints),str(x),str(y),speech])+'\n').encode())
         except ValueError: print('Invalid arguments')
     
     def do_attack(self,args):
@@ -90,8 +79,7 @@ class MUD(cmd.Cmd):
                 print('Unknown weapon')
                 return
         else: weapon='sword'
-        self.socket.sendall(shlex.join(['attack',args[0],str(10+WEAPON.index(weapon)*5)]).encode())
-        attack(args[0],*shlex.split(self.socket.recv(1024).decode()))
+        self.socket.sendall((shlex.join(['attack',args[0],str(10+WEAPON.index(weapon)*5)])+'\n').encode())
     
     def complete_attack(self, text, line, begidx, endidx):
         args = shlex.split(line[:begidx], False, False)
@@ -101,13 +89,24 @@ class MUD(cmd.Cmd):
             return [c for c in WEAPON if c.startswith(text)]
     
     def do_EOF(self,args):
+        self.socket=None
         return 1
     
     def do_default(self):
         print('Invalid command')
 
-host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
-port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
+def listen(cmdline):
+    while cmdline.socket is not None:
+        data = b''
+        while len(new := cmdline.socket.recv(1024)) == 1024:
+            data += new
+        data += new
+        print(f"\n{data.decode().rstrip()}",
+               f"\n{cmdline.prompt}{readline.get_line_buffer()}",
+               sep='', end='', flush=True)
+
+host = "localhost" if len(sys.argv) < 3 else sys.argv[2]
+port = 1337 if len(sys.argv) < 4 else int(sys.argv[3])
 
 if __name__=='__main__':
     if 'libedit' in readline.__doc__:
@@ -116,4 +115,11 @@ if __name__=='__main__':
         readline.parse_and_bind("tab: complete")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sockfd:
         sockfd.connect((host, port))
-        MUD(sockfd).cmdloop()
+        sockfd.sendall(f"{sys.argv[1]}\n".encode())
+        if int(sockfd.recv(1).decode()):
+            print(f"Connected to {host}:{port}")
+            cmdline = MUD(sockfd)
+            threading.Thread(target=listen, args=(cmdline,)).start()
+            cmdline.cmdloop()
+        else:
+            print("Connection refused")

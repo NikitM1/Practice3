@@ -1,7 +1,10 @@
+import asyncio
+import cowsay
 import shlex
 import socket
 import sys
 
+JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
 SIZE=10
 
 class Player:
@@ -16,8 +19,8 @@ class Player:
     
     def printPosition(self):
         if (self.x, self.y) in game.monsters:
-            return str(self.x),str(self.y),*game.encounter(self.x,self.y)
-        return str(self.x),str(self.y)
+            return 'Moved to '+str((self.x,self.y))+'\n'+game.encounter(self.x,self.y)
+        return 'Moved to '+str((self.x,self.y))+'\n'
 
 class Monster:
     def __init__(self,name,hitpoints,x,y,speech):
@@ -35,17 +38,20 @@ class Monster:
 class MUD:
     def __init__(self):
         self.monsters={}
-        self.player=Player()
+        self.players={}
     
-    def move(self,x,y):
+    def move(self,player,x,y):
         if x:
-            self.player.moveHorizontally(x)
+            player.moveHorizontally(x)
         elif y:
-            self.player.moveVertically(y)
-        return self.player.printPosition()
+            player.moveVertically(y)
+        return player.printPosition()
     
     def encounter(self,x,y):
-        return self.monsters[(x,y)].name,self.monsters[(x,y)].speech
+        if self.monsters[(x,y)].name=='jgsbat':
+            return cowsay.cowsay(self.monsters[(x,y)].speech,cowfile=JGSBAT)+'\n'
+        elif name:
+            return cowsay.cowsay(self.monsters[(x,y)].speech,cow=self.monsters[(x,y)].name)+'\n'       
     
     def addmon(self,name,hitpoints,x,y,speech):
         f=int((x,y) in self.monsters)
@@ -60,31 +66,68 @@ class MUD:
             del self.monsters[(self.player.x,self.player.y)]
         return map(str,[hitpoints,damage])
 
-def serve(conn,addr):
+async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    async def cmdExec(data):
+        nonlocal player, username
+        cmd, *args=shlex.split(data)
+        match cmd:
+            case 'move':
+                await game.players[username].put(game.move(player,*list(map(int,args))))
+    
+    addr = writer.get_extra_info("peername")
     print(f'Connected via {addr[0]}:{addr[1]}')
-    with conn:
-        global game
-        game=MUD()
-        while data:=conn.recv(1024).decode():
-            cmd, *args=shlex.split(data)
-            match cmd:
-                case 'size':
-                    conn.sendall(str(SIZE).encode())
-                case 'move':
-                    response=game.move(*list(map(int,args)))
-                    conn.sendall(shlex.join(response).encode())
-                case 'addmon':
-                    response=game.addmon(args[0],int(args[1]),int(args[2]),int(args[3]),args[4])
-                    conn.sendall(shlex.join(response).encode())
-                case 'attack':
-                    response=game.attack(args[0],int(args[1]))
-                    conn.sendall(shlex.join(response).encode())
+    
+    username=(await reader.readline()).decode().strip()
+    if username in game.players:
+        writer.write(b'0')
+        await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+        print(f'Disconnected from {addr[0]}:{addr[1]}')
+        return
+    
+    writer.write(b'1')
+    await writer.drain()
+    for user in game.players:
+        await game.players[user].put(f'{username} joined the server\n')
+    
+    game.players[username]=asyncio.Queue()
+    player=Player()
+    send = asyncio.create_task(reader.readline())
+    receive = asyncio.create_task(game.players[username].get())
+    
+    while not reader.at_eof():
+        done,pending=await asyncio.wait([send,receive],return_when=asyncio.FIRST_COMPLETED)
+        print('im here', done)
+        for task in done:
+            if task is send:
+                send = asyncio.create_task(reader.readline())
+                await cmdExec(task.result().decode())
+            elif task is receive:
+                receive = asyncio.create_task(game.players[username].get())
+                writer.write(f"{task.result()}\n".encode())
+                await writer.drain()
+        
+    send.cancel()
+    receive.cancel()
+    del game.players[username]
+    writer.close()
+    await writer.wait_closed()
+    for user in game.players:
+        await game.players[user].put(f"{username} left the server\n")
     print(f'Disconnected from {addr[0]}:{addr[1]}')
+    
 
-host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
-port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
+async def main():
+    host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
+    port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
+    print(f"Serving at {host}:{port}...")
+ 
 
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sockfd:
-    sockfd.bind((host, port))
-    sockfd.listen()
-    serve(*sockfd.accept())
+    server = await asyncio.start_server(serve, host, port)
+    async with server:
+        await server.serve_forever()
+
+global game
+game=MUD()
+asyncio.run(main())
