@@ -51,20 +51,20 @@ class MUD:
         if self.monsters[(x,y)].name=='jgsbat':
             return cowsay.cowsay(self.monsters[(x,y)].speech,cowfile=JGSBAT)+'\n'
         elif self.monsters[(x,y)].name:
-            return cowsay.cowsay(self.monsters[(x,y)].speech,cow=self.monsters[(x,y)].name)+'\n'       
+            return cowsay.cowsay(self.monsters[(x,y)].speech,cow=self.monsters[(x,y)].name)+'\n'
     
     def addmon(self,name,hitpoints,x,y,speech):
         f=int((x,y) in self.monsters)
         self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
         return 'Added monster '+name+' to '+str((x,y))+' saying '+speech+'\n'+(f*'Replaced the old monster\n')
     
-    def attack(self,name,damage):
-        if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
-            return '-1','-1'       
-        hitpoints,damage=self.monsters[(self.player.x,self.player.y)].attacked(damage)
+    def attack(self,player,name,damage):
+        if (player.x,player.y) not in self.monsters or self.monsters[(player.x,player.y)].name!=name:
+            return 'invalid'
+        hitpoints,damage=self.monsters[(player.x,player.y)].attacked(damage)
         if hitpoints==0:
-            del self.monsters[(self.player.x,self.player.y)]
-        return map(str,[hitpoints,damage])
+            del self.monsters[(player.x,player.y)]
+        return 'Attacked '+name+', damage '+str(damage)+' hp\n'+name+(' now has '+str(hitpoints) if int(hitpoints) else ' died')+'\n'
 
 async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     async def cmdExec(data):
@@ -74,7 +74,16 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
             case 'move':
                 await game.players[username].put(game.move(player,*list(map(int,args))))
             case 'addmon':
-                await game.players[username].put(game.addmon(args[0],int(args[1]),int(args[2]),int(args[3]),args[4]))
+                result=game.addmon(args[0],int(args[1]),int(args[2]),int(args[3]),args[4])
+                for user in players:
+                    await players[user].put(username+'made following changes:\n'+result)
+            case 'attack':
+                result=game.attack(player,args[0],int(args[1]))
+                if result=='invalid':
+                    await game.players[username].put('No name here\n')
+                else:
+                    for user in players:
+                        await players[user].put(username+'made following changes:\n'+result)
     
     addr = writer.get_extra_info("peername")
     print(f'Connected via {addr[0]}:{addr[1]}')
@@ -91,7 +100,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     writer.write(b'1')
     await writer.drain()
     for user in game.players:
-        await game.players[user].put(f'{username} joined the server\n')
+        await game.players[user].put(username+' joined the server\n')
     
     game.players[username]=asyncio.Queue()
     player=Player()
@@ -115,7 +124,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     writer.close()
     await writer.wait_closed()
     for user in game.players:
-        await game.players[user].put(f"{username} left the server\n")
+        await game.players[user].put(username+' left the server\n')
     print(f'Disconnected from {addr[0]}:{addr[1]}')
     
 

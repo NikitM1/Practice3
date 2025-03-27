@@ -107,7 +107,9 @@ if __name__=='__main__':
         if int(sockfd.recv(1).decode()):
             print(f"Connected to {host}:{port}")
             cmdline = MUD(sockfd)
-            threading.Thread(target=listen, args=(cmdline,)).start()
+            listener=threading.Thread(target=listen, args=(cmdline,))
+            listener.daemon=True
+            listener.start()
             cmdline.cmdloop()
         else:
             print("Connection refused")
