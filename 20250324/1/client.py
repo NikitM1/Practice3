@@ -6,20 +6,8 @@ import socket
 import sys
 import threading
 
-JGSBAT=cowsay.read_dot_cow(open('jgsbat.cow'))
 NAMES_LIST=cowsay.list_cows()+['jgsbat']
 WEAPON=['sword','spear','axe']
-
-def addmon(name,x,y,speech,f):
-    print('Added monster', name, 'to', (x,y), 'saying', speech)
-    if f: print('Replaced the old monster')
-
-def attack(name,hitpoints,damage):
-    if damage=='-1':
-        print('No',name,'here')
-        return
-    print('Attacked '+name+', damage',damage,'hp')
-    print(name+(' now has '+str(hitpoints) if int(hitpoints) else ' died'))    
 
 class MUD(cmd.Cmd):
     intro='<<< Welcome to Python-MUD 0.1 >>>'
@@ -34,12 +22,12 @@ class MUD(cmd.Cmd):
     def do_up(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b'move 0 1\n')
+            self.socket.sendall(b'move 0 -1\n')
     
     def do_down(self,args):
         if args: print('Invalid arguments')
         else: 
-            self.socket.sendall(b'move 0 -1\n')
+            self.socket.sendall(b'move 0 1\n')
     
     def do_left(self,args):
         if args: print('Invalid arguments')

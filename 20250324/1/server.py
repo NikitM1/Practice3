@@ -50,13 +50,13 @@ class MUD:
     def encounter(self,x,y):
         if self.monsters[(x,y)].name=='jgsbat':
             return cowsay.cowsay(self.monsters[(x,y)].speech,cowfile=JGSBAT)+'\n'
-        elif name:
+        elif self.monsters[(x,y)].name:
             return cowsay.cowsay(self.monsters[(x,y)].speech,cow=self.monsters[(x,y)].name)+'\n'       
     
     def addmon(self,name,hitpoints,x,y,speech):
         f=int((x,y) in self.monsters)
         self.monsters[(x,y)]=Monster(name,hitpoints,x,y,speech)
-        return str(f)
+        return 'Added monster '+name+' to '+str((x,y))+' saying '+speech+'\n'+(f*'Replaced the old monster\n')
     
     def attack(self,name,damage):
         if (self.player.x,self.player.y) not in self.monsters or self.monsters[(self.player.x,self.player.y)].name!=name:
@@ -73,6 +73,8 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         match cmd:
             case 'move':
                 await game.players[username].put(game.move(player,*list(map(int,args))))
+            case 'addmon':
+                await game.players[username].put(game.addmon(args[0],int(args[1]),int(args[2]),int(args[3]),args[4]))
     
     addr = writer.get_extra_info("peername")
     print(f'Connected via {addr[0]}:{addr[1]}')
@@ -98,7 +100,6 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     
     while not reader.at_eof():
         done,pending=await asyncio.wait([send,receive],return_when=asyncio.FIRST_COMPLETED)
-        print('im here', done)
         for task in done:
             if task is send:
                 send = asyncio.create_task(reader.readline())
@@ -121,7 +122,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 async def main():
     host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
     port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
-    print(f"Serving at {host}:{port}...")
+    print(f"Serving at {host}:{port}")
  
 
     server = await asyncio.start_server(serve, host, port)
