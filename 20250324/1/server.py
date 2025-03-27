@@ -82,7 +82,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
             case 'attack':
                 result=game.attack(player,args[0],int(args[1]))
                 if result=='invalid':
-                    await game.players[username].put('No name here\n')
+                    await game.players[username].put('No '+args[0]+' here\n')
                 else:
                     for user in players:
                         await players[user].put(username+'made following changes:\n'+result)
