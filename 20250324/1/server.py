@@ -69,6 +69,8 @@ class MUD:
 async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     async def cmdExec(data):
         nonlocal player, username
+        
+        if not data.strip(): return None
         cmd, *args=shlex.split(data)
         match cmd:
             case 'move':

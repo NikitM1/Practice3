@@ -102,7 +102,11 @@ if __name__=='__main__':
     else:
         readline.parse_and_bind("tab: complete")
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sockfd:
-        sockfd.connect((host, port))
+        try:
+            sockfd.connect((host, port))
+        except:
+            print('Connection refused')
+            exit()
         sockfd.sendall(f"{sys.argv[1]}\n".encode())
         if int(sockfd.recv(1).decode()):
             print(f"Connected to {host}:{port}")
@@ -112,4 +116,4 @@ if __name__=='__main__':
             listener.start()
             cmdline.cmdloop()
         else:
-            print("Connection refused")
+            print('Connection refused')
