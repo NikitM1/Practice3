@@ -49,6 +49,7 @@ class MUD(cmd.Cmd):
                 print('Cannot add unknown monster')
                 return
             speech=c[c.index('hello')+1]
+            c.pop(c.index('hello')+1)
             hitpoints=int(c[c.index('hp')+1])
             if hitpoints<=0: raise ValueError
             coords=c.index('coords')
