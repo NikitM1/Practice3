@@ -59,16 +59,16 @@ class MUD(cmd.Cmd):
         except ValueError: print('Invalid arguments')
     
     def do_attack(self,args):
-        args=shlex.split(args)
-        if len(args) not in (1,3) or 'with' in args and args.index('with')!=1:
+        c=shlex.split(args)
+        if len(c) not in (1,3) or 'with' in c and c.index('with')!=1:
             print('Invalid arguments')
             return
-        if len(args)==3:
-            if (weapon:=args[2]) not in WEAPON:
+        if len(c)==3:
+            if (weapon:=c[2]) not in WEAPON:
                 print('Unknown weapon')
                 return
         else: weapon='sword'
-        self.socket.sendall((shlex.join(['attack',args[0],str(10+WEAPON.index(weapon)*5)])+'\n').encode())
+        self.socket.sendall((shlex.join(['attack',c[0],str(10+WEAPON.index(weapon)*5)])+'\n').encode())
     
     def complete_attack(self, text, line, begidx, endidx):
         args = shlex.split(line[:begidx], False, False)
@@ -76,6 +76,13 @@ class MUD(cmd.Cmd):
             return [c for c in NAMES_LIST if c.startswith(text)]
         elif args[-1]=='with':
             return [c for c in WEAPON if c.startswith(text)]
+    
+    def do_sayall(self,args):
+        c=shlex.split(args)
+        if len(c)>1:
+            print('Invalid arguments')
+            return
+        self.socket.sendall((shlex.join(['sayall',c[0]])+'\n').encode())
     
     def do_EOF(self,args):
         self.socket=None
@@ -94,10 +101,14 @@ def listen(cmdline):
                f"\n{cmdline.prompt}{readline.get_line_buffer()}",
                sep='', end='', flush=True)
 
-host = "localhost" if len(sys.argv) < 3 else sys.argv[2]
-port = 1337 if len(sys.argv) < 4 else int(sys.argv[3])
-
 if __name__=='__main__':
+    if len(sys.argv)<2:
+        print('Username was not provided')
+        exit(1)
+    
+    host = "localhost" if len(sys.argv) < 3 else sys.argv[2]
+    port = 1337 if len(sys.argv) < 4 else int(sys.argv[3])
+    
     if 'libedit' in readline.__doc__:
         readline.parse_and_bind("bind ^I rl_complete")
     else:

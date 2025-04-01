@@ -77,15 +77,24 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 await game.players[username].put(game.move(player,*list(map(int,args))))
             case 'addmon':
                 result=game.addmon(args[0],int(args[1]),int(args[2]),int(args[3]),args[4])
+                await game.players[username].put(result)
                 for user in game.players:
-                    await game.players[user].put(username+'made following changes:\n'+result)
+                    if user!=username:
+                        await game.players[user].put(username+': '+result)
             case 'attack':
                 result=game.attack(player,args[0],int(args[1]))
                 if result=='invalid':
                     await game.players[username].put('No '+args[0]+' here\n')
                 else:
+                    await game.players[username].put(result)
                     for user in game.players:
-                        await game.players[user].put(username+'made following changes:\n'+result)
+                        if user!=username:
+                            await game.players[user].put(username+': '+result)
+            case 'sayall':
+                result=args[0]
+                for user in game.players:
+                    if user!=username:
+                        await game.players[user].put(username+': '+result)
     
     addr = writer.get_extra_info("peername")
     print(f'Connected via {addr[0]}:{addr[1]}')
