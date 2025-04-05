@@ -131,7 +131,7 @@ class MUD(cmd.Cmd):
         usage: sayall <text>
         """
         c = shlex.split(args)
-        if len(c) > 1:
+        if len(c) != 1:
             print('Invalid arguments')
             return
         self.socket.sendall((shlex.join(['sayall', c[0]]) + '\n').encode())

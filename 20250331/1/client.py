@@ -79,7 +79,7 @@ class MUD(cmd.Cmd):
     
     def do_sayall(self,args):
         c=shlex.split(args)
-        if len(c)>1:
+        if len(c)!=1:
             print('Invalid arguments')
             return
         self.socket.sendall((shlex.join(['sayall',c[0]])+'\n').encode())
