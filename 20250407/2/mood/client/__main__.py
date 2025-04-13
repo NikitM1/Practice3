@@ -4,6 +4,7 @@ import readline
 import shlex
 import socket
 import sys
+import time
 import threading
 
 # flake8: noqa W293
@@ -16,9 +17,19 @@ class MUD(cmd.Cmd):
     intro = '<<< Welcome to Python-MUD 0.1 >>>'
     prompt = '>>>'
 
-    def __init__(self, socket):
+    def __init__(self, socket,stdin=sys.stdin):
         super().__init__()
         self.socket = socket
+        self.stdin=stdin
+        if stdin is not sys.stdin:
+            self.timeout=1
+            self.use_rawinput=False
+        else:
+            self.timeout=0
+
+    def precmd(self, data):
+        time.sleep(self.timeout)
+        return super().precmd(data)
 
     def do_up(self, args):
         """
@@ -176,10 +187,13 @@ if __name__ == '__main__':
         sockfd.sendall(f"{sys.argv[1]}\n".encode())
         if int(sockfd.recv(1).decode()):
             print(f"Connected to {host}:{port}")
-            cmdline = MUD(sockfd)
+            
+            src=sys.stdin if '--file' not in sys.argv else open(sys.argv[sys.argv.index('--file')+1])
+            cmdline = MUD(sockfd, src)
             listener = threading.Thread(target=listen, args=(cmdline,))
             listener.daemon = True
             listener.start()
             cmdline.cmdloop()
+            src.close()
         else:
             print('Connection refused')
