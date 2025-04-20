@@ -7,19 +7,25 @@ Handle commands and store game parameters.
 import asyncio
 from .. import common
 import cowsay
+import gettext
 import random
 import shlex
 import sys
 
 SIZE = 10
+DOMAINS={
+    'ru_RU.UTF8': gettext.translation('serverLocales','po',fallback=True),
+    'en_US.UTF8': gettext.NullTranslations()
+}
 
 
 class Player:
     """A class stores player information and handle their movements."""
 
     def __init__(self):
-        """Initialize a player with position (0, 0)."""
+        """Initialize a player with position (0, 0)"""
         self.x = self.y = 0
+        self.locale='en_US.UTF8'
 
     def moveHorizontally(self, flag):
         """
@@ -43,7 +49,7 @@ class Player:
 
         :return: string to be printed to the player.
         """
-        return 'Moved to {}\n{}'.format((self.x, self.y), game.encounter(self.x, self.y))
+        return (self.x, self.y), game.encounter(self.x, self.y)
 
 
 class Monster:
@@ -86,6 +92,33 @@ monsters."""
         self.monsters = {}
         self.players = {}
         self.wandering = asyncio.create_task(self.wanderMonsters())
+
+    async def wanderMonsters(self):
+        """Handle the functionality of wandering monsters. \
+Move a random monster one cell in random direction."""
+        direction = ['right', 'left', 'up', 'down']
+        while True:
+            await asyncio.sleep(30)
+            if not self.monsters:
+                continue
+            while True:
+                x, y = random.choice(list(self.monsters))
+                monster = self.monsters[(x, y)]
+                i = random.randint(0, 3)
+                x = (x + (i < 2) * (-1) ** (i % 2)) % SIZE
+                y = (y - (i > 1) * (-1)**(i % 2)) % SIZE
+                if (x, y) not in self.monsters:
+                    break
+            del self.monsters[(monster.x, monster.y)]
+            monster.x, monster.y = x, y
+            self.monsters[(x, y)] = monster
+            encounter = self.encounter(x, y)
+
+            for user in self.players:
+                _player, _buffer = self.players[user]
+                encounterResult=((_player.x, _player.y) == (x, y)) * encounter
+                result='{} moved one cell {}\n{}'.format(monster.name, direction[i], encounterResult)
+                await _buffer.put(result)
 
     def move(self, player, x, y):
         """
@@ -135,8 +168,7 @@ monsters."""
         """
         f = int((x, y) in self.monsters)
         self.monsters[(x, y)] = Monster(name, hitpoints, x, y, speech)
-        replace=f * 'Replaced the old monster'
-        return 'Added monster {} to {} saying {}\n{}\n'.format(name, (x,y), speech, replace)
+        return name, (x,y), speech, f
 
     def attack(self, player, name, damage):
         """
@@ -155,36 +187,10 @@ monsters."""
             (player.x, player.y)].attacked(damage)
         if hitpoints == 0:
             del self.monsters[(player.x, player.y)]
-        attackResult=('now has ' + str(hitpoints) if int(
-                hitpoints) else 'died')
-        return 'Attacked {}, damage {} hp\n{} {}\n'.format(name, damage, name, attackResult)
+        return name, damage, name, hitpoints
 
-    async def wanderMonsters(self):
-        """Handle the functionality of wandering monsters. \
-Move a random monster one cell in random direction."""
-        direction = ['right', 'left', 'up', 'down']
-        while True:
-            await asyncio.sleep(30)
-            if not self.monsters:
-                continue
-            while True:
-                x, y = random.choice(list(self.monsters))
-                monster = self.monsters[(x, y)]
-                i = random.randint(0, 3)
-                x = (x + (i < 2) * (-1) ** (i % 2)) % SIZE
-                y = (y - (i > 1) * (-1)**(i % 2)) % SIZE
-                if (x, y) not in self.monsters:
-                    break
-            del self.monsters[(monster.x, monster.y)]
-            monster.x, monster.y = x, y
-            self.monsters[(x, y)] = monster
-            encounter = self.encounter(x, y)
-
-            for user in self.players:
-                _player, _buffer = self.players[user]
-                encounterResult=((_player.x, _player.y) == (x, y)) * encounter
-                result='{} moved one cell {}\n{}'.format(monster.name, direction[i], encounterResult)
-                await _buffer.put(result)
+    def sayall(self, message):
+        return message
 
     def movemonsters(self, mode):
         """
@@ -199,7 +205,17 @@ Move a random monster one cell in random direction."""
             self.wandering.cancel()
             self.wandering = None
 
-        return 'Moving monsters: {}'.format(mode)
+        return mode
+    
+    def locale(self, player, locale):
+        """
+        Handle locale command and set up new locale.
+
+        :param player: player who entered command.
+        :param locale: new locale.
+        """
+        player.locale=locale
+        return locale
 
 
 async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -220,19 +236,18 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         cmd, *args = shlex.split(data)
         match cmd:
             case 'move':
+                result=game.move(player, *list(map(int, args)))
                 await game.players[username][1].put(
-                    game.move(player, *list(map(int, args)))
+                    'Moved to {}\n{}'.format(*result)
                 )
             case 'addmon':
-                result = game.addmon(
+                *result,f = game.addmon(
                     args[0], int(args[1]), int(args[2]), int(args[3]), args[4]
                 )
-                await game.players[username][1].put(result)
                 for user in game.players:
-                    if user != username:
-                        await game.players[user][1].put(
-                            username + ': ' + result
-                        )
+                    await game.players[user][1].put(
+                        'Added monster {} to {} saying {}\n'.format(*result)+f*'Replaced the old monster\n'
+                    )
             case 'attack':
                 result = game.attack(player, args[0], int(args[1]))
                 if result == 'invalid':
@@ -240,23 +255,27 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                         'No {} here\n'.format(args[0])
                     )
                 else:
-                    await game.players[username][1].put(result)
+                    *result, hitpoints=result
                     for user in game.players:
-                        if user != username:
-                            await game.players[user][1].put(
-                                username + ': ' + result
-                            )
+                        await game.players[user][1].put(
+                            'Attacked {}, damage {} hp\n{}'.format(*result)+(' now has {}\n'.format(hitpoints) if hitpoints else ' died\n')
+                        )
             case 'sayall':
-                result = args[0]
+                result = game.sayall(args[0])
                 for user in game.players:
                     if user != username:
                         await game.players[user][1].put(
                             username + ': ' + result
                         )
             case 'movemonsters':
-                result = game.movemonsters(args[0])
+                result = game.movemonsters(args[0])              
                 for user in game.players:
-                    await game.players[user][1].put(result)
+                    await game.players[user][1].put('Moving monsters: {}'.format(result))
+            case 'locale':
+                result=game.locale(player, args[0])
+                await game.players[username][1].put(
+                    'Set up locale: {}\n'.format(result)
+                )
 
     addr = writer.get_extra_info("peername")
     print('Connected via {}:{}'.format(addr[0],addr[1]))
@@ -313,6 +332,5 @@ async def main():
     print('Serving at {}:{}'.format(host, port))
 
     server = await asyncio.start_server(serve, host, port)
-    asyncio.create_task(game.wanderMonsters())
     async with server:
         await server.serve_forever()

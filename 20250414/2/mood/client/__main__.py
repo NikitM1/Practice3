@@ -158,6 +158,18 @@ class MUD(cmd.Cmd):
             print('Invalid arguments')
             return
         self.socket.sendall((shlex.join(['movemonsters', c[0]]) + '\n').encode())
+    
+    def do_locale(self, args):
+        """
+        Change game language.
+        
+        usage: locale <language>
+        """
+        c=shlex.split(args)
+        if len(c)!=1 or c[0] not in ('ru_RU.UTF8', 'en_US.UTF8'):
+            print('Invalid arguments')
+            return
+        self.socket.sendall((shlex.join(['locale', c[0]]) + '\n').encode())
 
     def do_EOF(self, args):
         self.socket = None
