@@ -1,0 +1,10 @@
+addmon daemon hello hello hp 66 coords 1 1
+down
+right
+attack daemon
+attack daemon with sword
+attack daemon with spear
+attack daemon with axe
+attack daemon with spear
+sayall gg
+
