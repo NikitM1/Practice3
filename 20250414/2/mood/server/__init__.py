@@ -43,8 +43,7 @@ class Player:
 
         :return: string to be printed to the player.
         """
-        return 'Moved to ' + str(
-            (self.x, self.y)) + '\n' + game.encounter(self.x, self.y)
+        return 'Moved to {}\n{}'.format((self.x, self.y), game.encounter(self.x, self.y))
 
 
 class Monster:
@@ -136,9 +135,8 @@ monsters."""
         """
         f = int((x, y) in self.monsters)
         self.monsters[(x, y)] = Monster(name, hitpoints, x, y, speech)
-        return 'Added monster ' + name + ' to ' + str(
-            (x, y)) + ' saying ' + speech + '\n' + (
-                f * 'Replaced the old monster\n')
+        replace=f * 'Replaced the old monster'
+        return 'Added monster {} to {} saying {}\n{}\n'.format(name, (x,y), speech, replace)
 
     def attack(self, player, name, damage):
         """
@@ -157,9 +155,9 @@ monsters."""
             (player.x, player.y)].attacked(damage)
         if hitpoints == 0:
             del self.monsters[(player.x, player.y)]
-        return 'Attacked ' + name + ', damage ' + str(
-            damage) + ' hp\n' + name + (' now has ' + str(hitpoints) if int(
-                hitpoints) else ' died') + '\n'
+        attackResult=('now has ' + str(hitpoints) if int(
+                hitpoints) else 'died')
+        return 'Attacked {}, damage {} hp\n{} {}\n'.format(name, damage, name, attackResult)
 
     async def wanderMonsters(self):
         """Handle the functionality of wandering monsters. \
@@ -184,10 +182,9 @@ Move a random monster one cell in random direction."""
 
             for user in self.players:
                 _player, _buffer = self.players[user]
-                await _buffer.put(
-                    monster.name + ' moved one cell ' + direction[i] + '\n'
-                    + ((_player.x, _player.y) == (x, y)) * encounter
-                )
+                encounterResult=((_player.x, _player.y) == (x, y)) * encounter
+                result='{} moved one cell {}\n{}'.format(monster.name, direction[i], encounterResult)
+                await _buffer.put(result)
 
     def movemonsters(self, mode):
         """
@@ -202,7 +199,7 @@ Move a random monster one cell in random direction."""
             self.wandering.cancel()
             self.wandering = None
 
-        return 'Moving monsters: ' + mode
+        return 'Moving monsters: {}'.format(mode)
 
 
 async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
@@ -240,7 +237,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 result = game.attack(player, args[0], int(args[1]))
                 if result == 'invalid':
                     await game.players[username][1].put(
-                        'No ' + args[0] + ' here\n'
+                        'No {} here\n'.format(args[0])
                     )
                 else:
                     await game.players[username][1].put(result)
@@ -262,7 +259,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                     await game.players[user][1].put(result)
 
     addr = writer.get_extra_info("peername")
-    print(f'Connected via {addr[0]}:{addr[1]}')
+    print('Connected via {}:{}'.format(addr[0],addr[1]))
 
     username = (await reader.readline()).decode().strip()
     if username in game.players:
@@ -270,13 +267,13 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         await writer.drain()
         writer.close()
         await writer.wait_closed()
-        print(f'Disconnected from {addr[0]}:{addr[1]}')
+        print('Disconnected from {}:{}'.format(addr[0],addr[1]))
         return
 
     writer.write(b'1')
     await writer.drain()
     for user in game.players:
-        await game.players[user][1].put(username + ' joined the server\n')
+        await game.players[user][1].put('{} joined the server\n'.format(username))
 
     player = Player()
     game.players[username] = player, asyncio.Queue()
@@ -294,7 +291,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 await cmdExec(task.result().decode())
             elif task is receive:
                 receive = asyncio.create_task(game.players[username][1].get())
-                writer.write(f"{task.result()}\n".encode())
+                writer.write(f'{task.result()}\n'.encode())
                 await writer.drain()
 
     send.cancel()
@@ -303,8 +300,8 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     writer.close()
     await writer.wait_closed()
     for user in game.players:
-        await game.players[user][1].put(username + ' left the server\n')
-    print(f'Disconnected from {addr[0]}:{addr[1]}')
+        await game.players[user][1].put('{} left the server\n'.format(username))
+    print('Disconnected from {}:{}'.format(addr[0],addr[1]))
 
 
 async def main():
@@ -313,7 +310,7 @@ async def main():
     game = MUD()
     host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
     port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
-    print(f"Serving at {host}:{port}")
+    print('Serving at {}:{}'.format(host, port))
 
     server = await asyncio.start_server(serve, host, port)
     asyncio.create_task(game.wanderMonsters())

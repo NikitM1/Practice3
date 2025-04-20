@@ -5,8 +5,8 @@ name = "pypi"
 
 [packages]
 python-cowsay = "*"
-pydocstyle = "*"
 flake8 = "*"
+pydocstyle = "*"
 sphinx = "*"
 
 [dev-packages]
