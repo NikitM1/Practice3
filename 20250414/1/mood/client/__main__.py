@@ -15,7 +15,7 @@ WEAPON = ['sword', 'spear', 'axe']
 
 class MUD(cmd.Cmd):
     intro = '<<< Welcome to Python-MUD 0.1 >>>'
-    prompt = '>>>'
+    prompt = ''
 
     def __init__(self, socket, stdin=sys.stdin):
         super().__init__()
@@ -183,8 +183,8 @@ if __name__ == '__main__':
         print('Username was not provided')
         exit(1)
 
-    host = "localhost" if len(sys.argv) < 3 else sys.argv[2]
-    port = 1337 if len(sys.argv) < 4 else int(sys.argv[3])
+    host = "localhost" if len(sys.argv) < 3 or not sys.argv[2].isnumeric() else sys.argv[2]
+    port = 1337 if len(sys.argv) < 4 or not sys.argv[3].isnumeric() else int(sys.argv[3])
 
     if 'libedit' in readline.__doc__:
         readline.parse_and_bind("bind ^I rl_complete")
