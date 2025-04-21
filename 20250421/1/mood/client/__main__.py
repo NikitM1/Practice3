@@ -178,6 +178,10 @@ class MUD(cmd.Cmd):
     def do_default(self):
         print('Invalid command')
 
+    def emptyline(self):
+        """No request to the server."""
+        return
+
 
 def listen(cmdline):
     while cmdline.socket is not None:

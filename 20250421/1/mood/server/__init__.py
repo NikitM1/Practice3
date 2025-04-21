@@ -267,8 +267,8 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                         await buffer.put(DOMAINS[user.domain].ngettext(
                             'Attacked {}, damage {} hp\n{}',
                             'Attacked {}, damage {} hp\n{}',
-                            hitpoints
-                        ).format(name, hitpoints, name) + (DOMAINS[user.domain].ngettext(
+                            damage
+                        ).format(name, damage, name) + (DOMAINS[user.domain].ngettext(
                             ' now has {}\n',
                             ' now has {}\n',
                             hitpoints
@@ -280,7 +280,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 for user, buffer in game.players.items():
                     if user != player:
                         await buffer.put(
-                            player.name + ': ' + result
+                            player.name + ': ' + result+'\n'
                         )
             case 'movemonsters':
                 result = game.movemonsters(args[0])
@@ -329,7 +329,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 await cmdExec(player, task.result().decode())
             elif task is receive:
                 receive = asyncio.create_task(game.players[player].get())
-                writer.write(f'{task.result()}\n'.encode())
+                writer.write(task.result().encode())
                 await writer.drain()
 
     send.cancel()
