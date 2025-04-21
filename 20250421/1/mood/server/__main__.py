@@ -1,11 +1,13 @@
 """
 MOOD server module.
 
-Run the server.
+Start the server.
 """
 
-import asyncio
-from . import main
+from . import server
+import sys
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
+    port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
+    server(host, port)

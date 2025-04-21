@@ -22,9 +22,14 @@ DOMAINS = {
 class Player:
     """A class stores player information and handle their movements."""
 
-    def __init__(self):
-        """Initialize a player with position (0, 0)."""
+    def __init__(self, name):
+        """
+        Initialize a player with position (0, 0).
+        
+        :param name: player's username.
+        """
         self.x = self.y = 0
+        self.name = name
         self.domain = 'en_US.UTF8'
 
     def moveHorizontally(self, flag):
@@ -114,7 +119,7 @@ Move a random monster one cell in random direction."""
             self.monsters[(x, y)] = monster
             encounter = self.encounter(x, y)
 
-            for user, buffer in self.players.values():
+            for user, buffer in self.players.items():
                 encounterResult = ((user.x, user.y) == (x, y)) * encounter
                 await buffer.put(DOMAINS[user.domain].gettext(
                     '{} moved one cell {}\n{}'
@@ -226,10 +231,11 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     :param reader: reading stream.
     :param writer: writing stream.
     """
-    async def cmdExec(data):
+    async def cmdExec(player, data):
         """
         Execute a command.
 
+        :param player: player to run the command.
         :param data: command string.
         """
         if not data.strip():
@@ -238,26 +244,26 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         match cmd:
             case 'move':
                 result = game.move(player, *list(map(int, args)))
-                await game.players[username][1].put(DOMAINS[player.domain].gettext(
+                await game.players[player].put(DOMAINS[player.domain].gettext(
                     'Moved to {}\n{}'
                 ).format(*result))
             case 'addmon':
                 *result, f = game.addmon(
                     args[0], int(args[1]), int(args[2]), int(args[3]), args[4]
                 )
-                for user, buffer in game.players.values():
+                for user, buffer in game.players.items():
                     await buffer.put(DOMAINS[user.domain].gettext(
                         'Added monster {} to {} saying {}\n'
                     ).format(*result) + f * DOMAINS[user.domain].gettext('Replaced the old monster\n'))
             case 'attack':
                 result = game.attack(player, args[0], int(args[1]))
                 if result == 'invalid':
-                    await game.players[username][1].put(DOMAINS[player.domain].gettext(
+                    await game.players[player].put(DOMAINS[player.domain].gettext(
                         'No {} here\n'
                     ).format(args[0]))
                 else:
                     name, damage, hitpoints = result
-                    for user, buffer in game.players.values():
+                    for user, buffer in game.players.items():
                         await buffer.put(DOMAINS[user.domain].ngettext(
                             'Attacked {}, damage {} hp\n{}',
                             'Attacked {}, damage {} hp\n{}',
@@ -271,20 +277,20 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                         )))
             case 'sayall':
                 result = game.sayall(args[0])
-                for user in game.players:
-                    if user != username:
-                        await game.players[user][1].put(
-                            username + ': ' + result
+                for user, buffer in game.players.items():
+                    if user != player:
+                        await buffer.put(
+                            player.name + ': ' + result
                         )
             case 'movemonsters':
                 result = game.movemonsters(args[0])
-                for user, buffer in game.players.values():
+                for user, buffer in game.players.items():
                     await buffer.put(DOMAINS[user.domain].gettext(
                         'Moving monsters: {}\n'
                     ).format(result))
             case 'locale':
                 result = game.locale(player, args[0])
-                await game.players[username][1].put(DOMAINS[player.domain].gettext(
+                await game.players[player].put(DOMAINS[player.domain].gettext(
                     'Set up locale: {}\n'
                 ).format(result))
 
@@ -302,16 +308,16 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
     writer.write(b'1')
     await writer.drain()
-    for user, buffer in game.players.values():
+    for user, buffer in game.players.items():
         await buffer.put(DOMAINS[user.domain].gettext(
             '{} joined the server\n').format(username)
         )
 
-    player = Player()
-    game.players[username] = player, asyncio.Queue()
+    player = Player(username)
+    game.players[player] = asyncio.Queue()
 
     send = asyncio.create_task(reader.readline())
-    receive = asyncio.create_task(game.players[username][1].get())
+    receive = asyncio.create_task(game.players[player].get())
 
     while not reader.at_eof():
         done, pending = await asyncio.wait(
@@ -320,32 +326,40 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
         for task in done:
             if task is send:
                 send = asyncio.create_task(reader.readline())
-                await cmdExec(task.result().decode())
+                await cmdExec(player, task.result().decode())
             elif task is receive:
-                receive = asyncio.create_task(game.players[username][1].get())
+                receive = asyncio.create_task(game.players[player].get())
                 writer.write(f'{task.result()}\n'.encode())
                 await writer.drain()
 
     send.cancel()
     receive.cancel()
-    del game.players[username]
+    del game.players[player]
     writer.close()
     await writer.wait_closed()
-    for user, buffer in game.players.values():
+    for user, buffer in game.players.items():
         await buffer.put(DOMAINS[user.domain].gettext(
             '{} left the server\n').format(username)
         )
     print('Disconnected from {}:{}'.format(addr[0], addr[1]))
 
 
-async def main():
+async def main(host, port):
     """Run a game."""
     global game
     game = MUD()
-    host = "localhost" if len(sys.argv) < 2 else sys.argv[1]
-    port = 1337 if len(sys.argv) < 3 else int(sys.argv[2])
     print('Serving at {}:{}'.format(host, port))
 
     server = await asyncio.start_server(serve, host, port)
     async with server:
         await server.serve_forever()
+
+
+def server(host='localhost', port=1337):
+    """
+    Start the server.
+    
+    :param host: host string.
+    :param port: port.
+    """
+    asyncio.run(main(host, port))
