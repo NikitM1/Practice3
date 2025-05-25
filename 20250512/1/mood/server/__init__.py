@@ -10,11 +10,12 @@ import cowsay
 import gettext
 import random
 import shlex
-import sys
 
 SIZE = 10
 DOMAINS = {
-    'ru_RU.UTF8': gettext.translation('LocalesMOOD', 'mood/server/po', fallback=True),
+    'ru_RU.UTF8': gettext.translation(
+        'LocalesMOOD', 'mood/server/po', fallback=True
+    ),
     'en_US.UTF8': gettext.NullTranslations()
 }
 
@@ -25,7 +26,7 @@ class Player:
     def __init__(self, name):
         """
         Initialize a player with position (0, 0).
-        
+
         :param name: player's username.
         """
         self.x = self.y = 0
@@ -200,12 +201,12 @@ Move a random monster one cell in random direction."""
     def movemonsters(self, mode):
         """
         Handle wanderMonsters on and off.
-        
+
         :param mode: function work move (on or off).
         :return: string to be printed to the players.
         """
         if mode == 'on' and not self.wandering:
-            self.wandering = asyncio.create_task(wanderMonsters())
+            self.wandering = asyncio.create_task(self.wanderMonsters())
         elif mode == 'off' and self.wandering:
             self.wandering.cancel()
             self.wandering = None
@@ -254,13 +255,14 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                 for user, buffer in game.players.items():
                     await buffer.put(DOMAINS[user.domain].gettext(
                         'Added monster {} to {} saying {}\n'
-                    ).format(*result) + f * DOMAINS[user.domain].gettext('Replaced the old monster\n'))
+                    ).format(*result) + f * DOMAINS[user.domain].gettext(
+                        'Replaced the old monster\n'))
             case 'attack':
                 result = game.attack(player, args[0], int(args[1]))
                 if result == 'invalid':
-                    await game.players[player].put(DOMAINS[player.domain].gettext(
-                        'No {} here\n'
-                    ).format(args[0]))
+                    await game.players[player].put(DOMAINS[player.domain]
+                                                   .gettext('No {} here\n'
+                                                            ).format(args[0]))
                 else:
                     name, damage, hitpoints = result
                     for user, buffer in game.players.items():
@@ -268,13 +270,13 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                             'Attacked {}, damage {} hp\n{}',
                             'Attacked {}, damage {} hp\n{}',
                             damage
-                        ).format(name, damage, name) + (DOMAINS[user.domain].ngettext(
-                            ' now has {}\n',
-                            ' now has {}\n',
-                            hitpoints
-                        ).format(hitpoints) if hitpoints else DOMAINS[user.domain].gettext(
-                            ' died\n'
-                        )))
+                        ).format(name, damage, name) + (
+                            DOMAINS[user.domain].ngettext(
+                                ' now has {}\n',
+                                ' now has {}\n',
+                                hitpoints
+                            ).format(hitpoints) if hitpoints else
+                            DOMAINS[user.domain].gettext(' died\n')))
             case 'sayall':
                 result = game.sayall(args[0])
                 for user, buffer in game.players.items():
@@ -298,7 +300,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     print('Connected via {}:{}'.format(addr[0], addr[1]))
 
     username = (await reader.readline()).decode().strip()
-    if username in game.players:
+    if any(username == user.name for user in game.players):
         writer.write(b'0')
         await writer.drain()
         writer.close()
@@ -358,7 +360,7 @@ async def main(host, port):
 def server(host='localhost', port=1337):
     """
     Start the server.
-    
+
     :param host: host string.
     :param port: port.
     """

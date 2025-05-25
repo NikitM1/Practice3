@@ -1,98 +1,41 @@
-import multiprocessing
-import socket
-import time
+import io
 import unittest
-from mood import server
+from mood import client
+from unittest.mock import MagicMock, patch
 
 
-class TestServer(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.addr = ("localhost", 7357)
-        cls.proc = multiprocessing.Process(target=server.server, args=cls.addr)
-        cls.proc.start()
-        time.sleep(1)
-        cls.sockfd = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        cls.sockfd.connect(cls.addr)
-        cls.sockfd.sendall(b"tester\n")
-        cls.sockfd.recv(1)
-        cls.sockfd.sendall(b"movemonsters off\n")
-        cls.sockfd.recv(128)
+class TestClient(unittest.TestCase):
+    def setUp(self):
+        self.sockfd = MagicMock()
+        self.sockfd.sendall = lambda s: setattr(self.sockfd, "data", s)
+        self.sockfd.recv = lambda size: self.sockfd.data[:size]
 
-    def test_0_srv(self):
-        self.sockfd.sendall(b"addmon daemon 50 1 0 hi\n")
-        _data = self.sockfd.recv(128).decode().rstrip()
-        self.assertEqual(
-            _data,
-            "Added monster daemon to (1, 0) saying hi"
-        )
+    def test_0_cl(self):
+        with patch("sys.stdin", io.StringIO("up\n")) as stdin:
+            client.MUD(self.sockfd, stdin).cmdloop()
+            self.assertEqual(self.sockfd.data.decode().rstrip(), "move 0 -1")
 
-    def test_1_srv(self):
-        self.sockfd.sendall(b"move 1 0\n")
-        _data = self.sockfd.recv(1024).decode().rstrip()
-        self.assertEqual(_data, r"""Moved to (1, 0)
- ____ 
-< hi >
- ---- 
-   \         ,        ,
-    \       /(        )`
-     \      \ \___   / |
-            /- _  `-/  '
-           (/\/ \ \   /\
-           / /   | `    \
-           O O   ) /    |
-           `-^--'`<     '
-          (_.)  _  )   /
-           `.___/`    /
-             `-----' /
-<----.     __ / __   \
-<----|====O)))==) \) /====
-<----'    `--' `.__,' \
-             |        |
-              \       /
-        ______( (_  / \______
-      ,'  ,-----'   |        \
-      `--{__________)        \/""")
+    def test_1_cl(self):
+        with patch("sys.stdin", io.StringIO("right\n")) as stdin:
+            client.MUD(self.sockfd, stdin).cmdloop()
+            self.assertEqual(self.sockfd.data.decode().rstrip(), "move 1 0")
 
-    def test_2_srv(self):
-        self.sockfd.sendall(b"attack daemon 10\n")
-        time.sleep(0.125)
-        _data = self.sockfd.recv(128).decode().rstrip()
-        self.assertEqual(
-            _data, """Attacked daemon, damage 10 hp
-daemon now has 40""")
+    def test_2_cl(self):
+        with patch("sys.stdin", io.StringIO("addmon daemon hello hello coords 1 0 hp 50\n")) as stdin:
+            client.MUD(self.sockfd, stdin).cmdloop()
+            self.assertEqual(self.sockfd.data.decode().rstrip(), "addmon daemon 50 1 0 hello")
 
-    def test_3_srv(self):
-        self.sockfd.sendall(b"attack daemon 15\n")
-        time.sleep(0.125)
-        _data = self.sockfd.recv(128).decode().rstrip()
-        self.assertEqual(
-            _data, """Attacked daemon, damage 15 hp
-daemon now has 25""")
+    def test_3_cl(self):
+        with patch("sys.stdin", io.StringIO("attack daemon\n")) as stdin:
+            client.MUD(self.sockfd, stdin).cmdloop()
+            self.assertEqual(self.sockfd.data.decode().rstrip(), "attack daemon 10")
 
-    def test_4_srv(self):
-        self.sockfd.sendall(b"attack daemon 20\n")
-        time.sleep(0.125)
-        _data = self.sockfd.recv(128).decode().rstrip()
-        self.assertEqual(
-            _data, """Attacked daemon, damage 20 hp
-daemon now has 5""")
+    def test_4_cl(self):
+        with patch("sys.stdin", io.StringIO("down town\n")) as stdin:
+            client.MUD(self.sockfd, stdin).cmdloop()
+            self.sockfd.return_value.sendall.assert_not_called()
 
-    def test_5_srv(self):
-        self.sockfd.sendall(b"attack daemon 10\n")
-        time.sleep(0.125)
-        _data = self.sockfd.recv(128).decode().rstrip()
-        self.assertEqual(
-            _data, """Attacked daemon, damage 5 hp
-daemon died""")
-
-    def test_6_srv(self):
-        self.sockfd.sendall(b"attack daemon 10\n")
-        time.sleep(0.125)
-        _data = self.sockfd.recv(128).decode().rstrip()
-        self.assertEqual(_data, "No daemon here")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.sockfd.close()
-        cls.proc.terminate()
+    def test_5_cl(self):
+        with patch("sys.stdin", io.StringIO("attack daemon with ak47\n")) as stdin:
+            client.MUD(self.sockfd, stdin).cmdloop()
+            self.sockfd.return_value.sendall.assert_not_called()

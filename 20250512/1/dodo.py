@@ -21,7 +21,6 @@ def task_po():
     "update server translation file"
     return {
         "actions": ["pybabel update -D LocalesMOOD -d mood/server/po -i templates.pot"],
-        "file_dep": ["templates.pot"],
         "targets": ["mood/server/po/ru_RU.UTF-8/LC_MESSAGES/LocalesMOOD.po"],
     }
 
@@ -29,7 +28,6 @@ def task_mo():
     "compile server translation file"
     return {
         "actions": ["pybabel compile -D LocalesMOOD -d mood/server/po -l ru_RU.UTF-8"],
-        "file_dep": ["mood/server/po/ru_RU.UTF-8/LC_MESSAGES/LocalesMOOD.po"],
         "targets": ["mood/server/po/ru_RU.UTF-8/LC_MESSAGES/LocalesMOOD.mo"],
         "clean": [clean_targets],
     }
@@ -44,7 +42,7 @@ def task_i18n():
 def task_html():
     "generate HTML documentation"
     return {
-        "actions": ["make html"],
+        "actions": ['sphinx-build -M html docs docs/_build'],
         "file_dep": [*glob.iglob("*.rst"), *glob.iglob("mood/*/*.py")],
         "clean": [(shutil.rmtree, ["_build"])],
     }
@@ -52,6 +50,15 @@ def task_html():
 def task_test():
     "run server response tests"
     return {
-        "actions": ["python3 -m unittest check/srv_test.py"],
-        "task_dep": ["i18n"],
+        "actions": ["python3 -m unittest check/mood_test.py"],
+    }
+
+def task_sdist():
+    return {
+        "actions": ["python3 -m build --sdist"]
+    }
+
+def task_wheel():
+    return {
+        "actions": ["python3 -m build --wheel"]
     }
