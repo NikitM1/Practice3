@@ -14,7 +14,7 @@ import shlex
 SIZE = 10
 DOMAINS = {
     'ru_RU.UTF8': gettext.translation(
-        'LocalesMOOD', 'mood-1.0/mood/server/po', fallback=True
+        'LocalesMOOD', 'mood/server/po', fallback=True
     ),
     'en_US.UTF8': gettext.NullTranslations()
 }

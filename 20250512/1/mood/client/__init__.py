@@ -186,7 +186,7 @@ class MUD(cmd.Cmd):
         else:
             #webbrowser.open("docs/_build/html/index.html")
             #app('Safari').make(new=k.document,with_properties={k.URL:f"file:///{os.path.dirname(__file__)}/../_build/html/index.html"})
-            path = os.path.abspath("mood-1.0/docs/_build/html/index.html")
+            path = os.path.abspath("docs/_build/html/index.html")
             subprocess.run(["open", "-a", "Safari", path])
 
     def do_EOF(self, args):
