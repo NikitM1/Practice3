@@ -1,9 +1,11 @@
 """The file initialize the client part od MOOD."""
 import cmd
 import cowsay
+import os
 import readline
 import shlex
 import socket
+import subprocess
 import sys
 import time
 import threading
@@ -183,7 +185,9 @@ class MUD(cmd.Cmd):
             print('Invalid arguments')
         else:
             #webbrowser.open("docs/_build/html/index.html")
-            MUD('Safari').make(new=k.document,with_properties={k.URL:f"file:///{os.path.dirname(__file__)}/../_build/html/index.html"})
+            #app('Safari').make(new=k.document,with_properties={k.URL:f"file:///{os.path.dirname(__file__)}/../_build/html/index.html"})
+            path = os.path.abspath("docs/_build/html/index.html")
+            subprocess.run(["open", "-a", "Safari", path])
 
     def do_EOF(self, args):
         self.socket = None

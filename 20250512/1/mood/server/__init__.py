@@ -45,7 +45,7 @@ class Player:
         """
         Move the player vertically.
 
-        :param flag: players movement firection.
+        :param flag: players movement direction.
         """
         self.y = (self.y + flag) % SIZE
 
@@ -221,7 +221,6 @@ Move a random monster one cell in random direction."""
         :param locale: new locale.
         """
         player.domain = locale
-        print(player.domain)
         return locale
 
 
