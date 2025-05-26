@@ -28,12 +28,13 @@ client = "mood.client.__main__:start_main"
 server = "mood.server.__main__:run_main"
 
 [tool.setuptools]
-packages = ["mood.client","mood.server", "mood.common", "mood"]
+packages = ["mood.client","mood.server", "mood.common", "mood", "check"]
 include-package-data = true
 package-dir = {"mood" = "mood"}
 
 [tool.setuptools.package-data]
 "mood" = ["**"]
+"documentations" = ["*.html"]
 
 
 
