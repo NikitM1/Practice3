@@ -86,7 +86,7 @@ monsters."""
         """Initislize a game lists of players and monsters."""
         self.monsters = {}
         self.players = {}
-        self.wandering = asyncio.create_task(self.wanderMonsters())
+        self.wandering=asyncio.create_task(self.wanderMonsters())
 
     def move(self, player, x, y):
         """
@@ -188,22 +188,21 @@ Move a random monster one cell in random direction."""
                     monster.name + ' moved one cell ' + direction[i] + '\n'
                     + ((_player.x, _player.y) == (x, y)) * encounter
                 )
-
-    def movemonsters(self, mode):
+        
+    def movemonsters(self,mode):
         """
         Handle wanderMonsters on and off.
         
         :param mode: function work move (on or off).
         :return: string to be printed to the players.
         """
-        if mode == 'on' and not self.wandering:
-            self.wandering = asyncio.create_task(wanderMonsters())
-        elif mode == 'off' and self.wandering:
+        if mode=='on' and not self.wandering:
+            self.wandering=asyncio.create_task(wanderMonsters())
+        elif mode=='off' and self.wandering:
             self.wandering.cancel()
-            self.wandering = None
-
-        return 'Moving monsters: ' + mode
-
+            self.wandering=None
+        
+        return 'Moving monsters: '+mode
 
 async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
     """
@@ -257,7 +256,7 @@ async def serve(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
                             username + ': ' + result
                         )
             case 'movemonsters':
-                result = game.movemonsters(args[0])
+                result=game.movemonsters(args[0])
                 for user in game.players:
                     await game.players[user][1].put(result)
 
