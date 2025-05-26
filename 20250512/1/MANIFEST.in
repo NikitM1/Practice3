@@ -1,0 +1,6 @@
+recursive-include mood *
+recursive-include docs *
+recursive-include check *
+include Pipfile*
+include dodo.py
+include pyproject.toml

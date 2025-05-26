@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-05-26 11:10+0300\n"
+"POT-Creation-Date: 2025-05-26 12:21+0300\n"
 "PO-Revision-Date: 2025-04-20 21:23+0300\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: ru_RU\n"
@@ -19,7 +19,8 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: mood/server/__init__.py:126
+#: build/lib/mood/server/__init__.py:126
+#: dist/mood-1.0/mood/server/__init__.py:126 mood/server/__init__.py:126
 #, python-brace-format
 msgid ""
 "{} moved one cell {}\n"
@@ -28,7 +29,8 @@ msgstr ""
 "{} переместился на одну ячейку в направлении {}\n"
 "{}"
 
-#: mood/server/__init__.py:248
+#: build/lib/mood/server/__init__.py:248
+#: dist/mood-1.0/mood/server/__init__.py:248 mood/server/__init__.py:248
 #, python-brace-format
 msgid ""
 "Moved to {}\n"
@@ -37,21 +39,25 @@ msgstr ""
 "Переместился в позицию {}\n"
 "{}"
 
-#: mood/server/__init__.py:256
+#: build/lib/mood/server/__init__.py:256
+#: dist/mood-1.0/mood/server/__init__.py:256 mood/server/__init__.py:256
 #, python-brace-format
 msgid "Added monster {} to {} saying {}\n"
 msgstr "Добавлен монстр {} в позицию {}, произносящий {}\n"
 
-#: mood/server/__init__.py:258
+#: build/lib/mood/server/__init__.py:258
+#: dist/mood-1.0/mood/server/__init__.py:258 mood/server/__init__.py:258
 msgid "Replaced the old monster\n"
 msgstr "Старый монстр был заменен\n"
 
-#: mood/server/__init__.py:263
+#: build/lib/mood/server/__init__.py:263
+#: dist/mood-1.0/mood/server/__init__.py:263 mood/server/__init__.py:263
 #, python-brace-format
 msgid "No {} here\n"
 msgstr "Монстр {} отсутствует\n"
 
-#: mood/server/__init__.py:269
+#: build/lib/mood/server/__init__.py:269
+#: dist/mood-1.0/mood/server/__init__.py:269 mood/server/__init__.py:269
 #, python-brace-format
 msgid ""
 "Attacked {}, damage {} hp\n"
@@ -69,7 +75,8 @@ msgstr[2] ""
 "Атакован монстр {}, снесли {} очков здоровья\n"
 "Монстр {}"
 
-#: mood/server/__init__.py:274
+#: build/lib/mood/server/__init__.py:274
+#: dist/mood-1.0/mood/server/__init__.py:274 mood/server/__init__.py:274
 #, python-brace-format
 msgid " now has {}\n"
 msgid_plural " now has {}\n"
@@ -77,26 +84,31 @@ msgstr[0] " теперь имеет {} очко здоровья\n"
 msgstr[1] " теперь имеет {} очка здоровья\n"
 msgstr[2] " теперь имеет {} очков здоровья\n"
 
-#: mood/server/__init__.py:278
+#: build/lib/mood/server/__init__.py:278
+#: dist/mood-1.0/mood/server/__init__.py:278 mood/server/__init__.py:278
 msgid " died\n"
 msgstr " умер\n"
 
-#: mood/server/__init__.py:290
+#: build/lib/mood/server/__init__.py:290
+#: dist/mood-1.0/mood/server/__init__.py:290 mood/server/__init__.py:290
 #, python-brace-format
 msgid "Moving monsters: {}\n"
 msgstr "Перемещение монстров: {}\n"
 
-#: mood/server/__init__.py:295
+#: build/lib/mood/server/__init__.py:295
+#: dist/mood-1.0/mood/server/__init__.py:295 mood/server/__init__.py:295
 #, python-brace-format
 msgid "Set up locale: {}\n"
 msgstr "Установлена локаль: {}\n"
 
-#: mood/server/__init__.py:314
+#: build/lib/mood/server/__init__.py:314
+#: dist/mood-1.0/mood/server/__init__.py:314 mood/server/__init__.py:314
 #, python-brace-format
 msgid "{} joined the server\n"
 msgstr "{} присоединился к серверу\n"
 
-#: mood/server/__init__.py:343
+#: build/lib/mood/server/__init__.py:343
+#: dist/mood-1.0/mood/server/__init__.py:343 mood/server/__init__.py:343
 #, python-brace-format
 msgid "{} left the server\n"
 msgstr "{} покинул сервер\n"

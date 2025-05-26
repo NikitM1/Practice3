@@ -16,26 +16,23 @@ dependencies = [
     "python-cowsay",
     "flake8",
     "pycodestyle",
-    "pydocstyle",
-    "appscript"
+    "pydocstyle"
 ]
 [build-system]
-requires=["setuptools"]
+requires=["setuptools", "Sphinx", "build", "doit", "python-cowsay"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-client = "mood.client.__main__:start_main"
-server = "mood.server.__main__:run_main"
+client = "mood.client.__main__:client"
+server = "mood.server.__main__:server"
 
 [tool.setuptools]
-packages = ["mood.client","mood.server", "mood.common", "mood", "check"]
 include-package-data = true
-package-dir = {"mood" = "mood"}
+
+[tool.setuptools.package-dir]
+mood = "mood"
 
 [tool.setuptools.package-data]
-"mood" = ["**"]
-"documentations" = ["*.html"]
-
-
+mood = ["mood/server/*/*/*/*.mo", "mood/docs/*"]
 
 
